@@ -858,11 +858,202 @@ kbd {
 }
 
 @media (max-width: 1200px) {
+  html,
+  body {
+    height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .top-bar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .brand-cluster {
+    flex: 1 1 auto;
+    justify-content: space-between;
+  }
+
+  .band-matrix {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    justify-content: flex-start;
+  }
+
+  .top-controls {
+    order: 2;
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .nav-tabs {
+    order: 2;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .nav-tab {
+    padding: 8px 4px;
+    font-size: 10.5px;
+    text-align: center;
+  }
+
+  .main-stage {
+    flex: 1 1 auto;
+    height: auto;
+    overflow: visible;
+    padding: 8px 10px 18px;
+  }
+
+  .view-panel.active-view,
   #view-radar.active-view,
   #view-review.active-view,
   #view-planner.active-view,
   #view-council.active-view {
-    grid-template-columns: 1fr;
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto;
+    gap: 12px;
+    overflow: visible;
+  }
+
+  /* Put Radar Scope, Geiger Bar & Giant 1-Tap Button FIRST on mobile */
+  .radar-center-column {
+    order: -1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .radar-scope-wrapper {
+    height: 290px;
+    min-height: 260px;
+  }
+
+  .scope-overlay-top {
+    flex-wrap: wrap;
+    pointer-events: auto;
+  }
+
+  .scope-overlay-top .control-row {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .one-tap-zone {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .btn-giant-log {
+    grid-column: 1 / -1;
+    min-height: 68px;
+    font-size: 15px;
+    padding: 14px 12px;
+  }
+
+  .btn-secondary-log {
+    min-height: 54px;
+    font-size: 12px;
+  }
+
+  .panel-card {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    padding: 12px;
+  }
+
+  .control-row {
+    flex-wrap: wrap;
+  }
+
+  .table-scroll {
+    max-height: 340px;
+    overflow-x: auto;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 620px;
+  }
+
+  .export-preview {
+    min-height: 240px;
+    max-height: 360px;
+  }
+
+  .footer-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    height: auto;
+    padding: 8px 12px;
+    gap: 6px;
+  }
+
+  .kbd-hint {
+    width: 100%;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .brand-sub {
+    display: none;
+  }
+
+  .nav-tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .nav-tab {
+    padding: 9px 6px;
+    font-size: 11px;
+  }
+
+  .radar-scope-wrapper {
+    height: 250px;
+    min-height: 230px;
+  }
+
+  .geiger-zone-title {
+    font-size: 12.5px;
+  }
+
+  .geiger-distance-readout {
+    font-size: 18px;
+  }
+
+  .passby-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .btn,
+  .input-field,
+  select.input-field {
+    min-height: 38px;
+    font-size: 12px;
   }
 }
