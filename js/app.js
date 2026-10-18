@@ -937,6 +937,17 @@ window.RimReaperApp = (function () {
       if (tab) tab.addEventListener('click', () => showView(idx));
     });
 
+    // Bind 1-Click Logo Switcher (Cycles Logo 1 -> Logo 2 -> Logo 3 -> Logo 4)
+    const LOGOS = ['./logo.jpg', './logo_v2.jpg', './logo_v3.jpg', './logo_v4.jpg'];
+    let logoIdx = 0;
+    if (el('app-brand-logo')) {
+      el('app-brand-logo').addEventListener('click', () => {
+        logoIdx = (logoIdx + 1) % LOGOS.length;
+        el('app-brand-logo').src = LOGOS[logoIdx];
+        showToast(`Switched Active Logo: Option #${logoIdx + 1} (${LOGOS[logoIdx]})`);
+      });
+    }
+
     // Bind Boot Sweep Button
     if (el('btn-boot-sweep')) {
       el('btn-boot-sweep').addEventListener('click', runBootSequence);
