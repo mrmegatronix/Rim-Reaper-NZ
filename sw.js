@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rim-reaper-nz-v1.3.0';
+const CACHE_NAME = 'rim-reaper-nz-v1.4.0';
 const TILE_CACHE_NAME = 'rim-reaper-nz-tiles-v1';
 
 const CORE_ASSETS = [
@@ -60,26 +60,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Offline-first strategy for app shell & static assets
+  // Network-first with offline cache fallback for app shell & static assets
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return networkResponse;
+      })
+      .catch(() =>
+        caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
           }
-          return networkResponse;
-        })
-        .catch(() => {
           if (event.request.mode === 'navigate') {
             return caches.match('./index.html');
           }
           return new Response('Offline', { status: 503, statusText: 'Offline' });
-        });
-    })
+        })
+      )
   );
 });

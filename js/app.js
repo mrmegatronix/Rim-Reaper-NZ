@@ -1221,6 +1221,24 @@ window.RimReaperApp = (function () {
       el('btn-view-scope').addEventListener('click', () => setRadarViewLayout('mode-scope-only', 'btn-view-scope'));
     }
 
+    // Bind Mobile Telemetry & Sim Drawer Toggle
+    if (el('btn-mobile-panels')) {
+      el('btn-mobile-panels').addEventListener('click', () => {
+        const shown = document.body.classList.toggle('mobile-show-panels');
+        el('btn-mobile-panels').className = shown ? 'btn btn-amber mobile-only-btn' : 'btn mobile-only-btn';
+        el('btn-mobile-panels').textContent = shown ? '✕ HIDE PANELS' : '⚙️ TELEMETRY';
+        if (shown) {
+          setTimeout(() => window.scrollTo({ top: 460, behavior: 'smooth' }), 80);
+        }
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      if (radarMap) radarMap.invalidateSize();
+      if (reviewMap) reviewMap.invalidateSize();
+      if (plannerMap) plannerMap.invalidateSize();
+    });
+
     // Bind 1-Click Logo Switcher (Cycles Logo 1 -> Logo 2 -> Logo 3 -> Logo 4)
     const LOGOS = ['./logo.jpg', './logo_v2.jpg', './logo_v3.jpg', './logo_v4.jpg'];
     let logoIdx = 0;
