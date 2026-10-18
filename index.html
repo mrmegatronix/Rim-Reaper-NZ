@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#ff2a2a" />
+  <title>Rim-Reaper-NZ — NZ Pothole Radar Detector &amp; Council/NZTA Suite</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- TOP TELEMETRY & RADAR BAND MATRIX BAR -->
+    <header class="top-bar">
+      <div class="brand-cluster">
+        <div class="brand-logo" title="Rim-Reaper-NZ Radar">RR</div>
+        <div class="brand-title">RIM-REAPER-NZ</div>
+        <span class="brand-sub">AOTEAROA LEFT-LANE RADAR</span>
+      </div>
+
+      <!-- Classic Radar Detector Band Indicators (X, K, Ka, LASER, POTHOLE, SLIP, GPS, NZTA) -->
+      <div class="band-matrix" aria-label="Radar Detector Bands">
+        <span id="band-X" class="band-pill">X</span>
+        <span id="band-K" class="band-pill">K</span>
+        <span id="band-Ka" class="band-pill">Ka</span>
+        <span id="band-LASER" class="band-pill">LASER</span>
+        <span id="band-POTHOLE" class="band-pill active-danger">POTHOLE</span>
+        <span id="band-SLIP" class="band-pill">SLIP</span>
+        <span id="band-GPS" class="band-pill active-ok">GPS</span>
+        <span id="band-NZTA" class="band-pill active-ok">NZTA/67TA</span>
+        <span id="freeze-lock-badge" class="band-pill">UNLOCKED</span>
+      </div>
+
+      <div class="top-controls">
+        <nav class="nav-tabs" role="tablist">
+          <button id="tab-radar" class="nav-tab active" role="tab">1. RADAR HUD</button>
+          <button id="tab-review" class="nav-tab" role="tab">2. HAZARD LOG &amp; SIZING</button>
+          <button id="tab-planner" class="nav-tab" role="tab">3. TRIP CORRIDOR SCAN</button>
+          <button id="tab-council" class="nav-tab" role="tab">4. COUNCIL / NZTA / OIA</button>
+        </nav>
+        <button id="btn-lang-toggle" class="btn" title="Toggle English / Te Reo Māori">🌐 EN / MĀORI</button>
+        <div class="hud-clock live-clock-target" aria-label="Digital Clock">20<span class="blink-colon">:</span>00<span class="blink-colon">:</span>00</div>
+      </div>
+    </header>
+
+    <!-- MAIN STAGE: 4 SLIDES / MODES -->
+    <main class="main-stage">
+      <!-- ====================================================================
+           VIEW 1: DRIVING / RADAR MODE (MINIMAL HUD & SAFETY CONTROLS)
+           ==================================================================== -->
+      <section id="view-radar" class="view-panel active-view" aria-label="Driving Radar Mode">
+        <!-- Left Column: Vehicle Telemetry & NZ Left-Hand Lane Vector Engine -->
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-title">NZ LEFT-LANE TELEMETRY</span>
+            <div class="speed-limit-disc" id="hud-speed-limit" title="Corridor Speed Limit">100</div>
+          </div>
+
+          <div class="telemetry-grid">
+            <div class="hud-metric-box">
+              <span class="hud-metric-label">GROUND SPEED (KM/H)</span>
+              <span class="hud-metric-value" id="hud-speed-val" style="color:var(--accent-green);font-size:26px;">0</span>
+            </div>
+            <div class="hud-metric-box">
+              <span class="hud-metric-label">COMPASS BEARING</span>
+              <span class="hud-metric-value" id="hud-heading-val">345° NNW</span>
+            </div>
+            <div class="hud-metric-box">
+              <span class="hud-metric-label">WGS84 GPS FIX</span>
+              <span class="hud-metric-value" id="hud-coords-val" style="font-size:13px;">-36.3695, 174.6195</span>
+            </div>
+            <div class="hud-metric-box">
+              <span class="hud-metric-label">Z-AXIS IMPULSE / ACC</span>
+              <span class="hud-metric-value" id="hud-gforce-val" style="font-size:15px;color:var(--accent-amber);">1.00 G</span>
+            </div>
+          </div>
+
+          <!-- NZ Left-Hand Drive Lateral Track Selector -->
+          <div class="nz-lane-diagram">
+            <div class="control-row" style="justify-content:space-between;">
+              <span class="hud-metric-label" style="color:var(--accent-green);">KEEP-LEFT NZ VECTOR</span>
+              <span id="hud-lane-vector" class="status-pill stat-fixed">NNW-Bound Left-Hand Lane (LHL)</span>
+            </div>
+            <div class="carriageway-visual">
+              <div class="lane-half lane-left-nz">
+                <span>▲ NZ LEFT LANE (ACTIVE)</span>
+                <span style="font-size:9px;opacity:0.85;">Alerts Armed (±45° Cone)</span>
+              </div>
+              <div class="lane-centerline"></div>
+              <div class="lane-half lane-right-opposing">
+                <span>▼ OPPOSING LANE</span>
+                <span style="font-size:9px;">Auto-Filtered Out</span>
+              </div>
+            </div>
+            <div class="hud-metric-label" id="hud-divided-flag" style="color:var(--accent-cyan);">
+              SINGLE CARRIAGEWAY (±45° DIRECTIONAL FILTER ACTIVE)
+            </div>
+            <div class="wheel-track-selector">
+              <button class="track-btn active" data-track="Left Wheel Track (Verge Side)">LEFT WHEEL (VERGE)</button>
+              <button class="track-btn" data-track="Center Lane">CENTER TRACK</button>
+              <button class="track-btn" data-track="Right Wheel Track (Centerline Side)">RIGHT WHEEL (LINE)</button>
+            </div>
+          </div>
+
+          <!-- Corridor & Jurisdiction Live Resolution -->
+          <div class="hud-metric-box">
+            <span class="hud-metric-label">ACTIVE CORRIDOR &amp; RAMM STATION</span>
+            <span class="hud-metric-value" id="hud-road-badge" style="font-size:13px;color:var(--accent-cyan);">SH1 Dome Valley • SH1-RS0342/RP0.60</span>
+            <span class="hud-metric-label" id="hud-council-badge" style="color:var(--accent-amber);margin-top:2px;">Waka Kotahi NZ Transport Agency</span>
+          </div>
+
+          <!-- Calibration, Co-Pilot & Night-Vision Controls -->
+          <div class="control-row">
+            <select id="vehicle-profile-select" class="input-field" title="Vehicle Suspension Profile">
+              <option value="Car">🚗 Profile: Standard Car (2.2G)</option>
+              <option value="4WD/Ute">🛻 Profile: 4WD / Dual-Cab Ute (2.6G)</option>
+              <option value="Motorcycle/EV">🏍️ Profile: Motorcycle / EV (1.7G)</option>
+              <option value="Heavy Truck">🚛 Profile: Heavy Truck / Camper (2.9G)</option>
+            </select>
+            <select id="theme-select" class="input-field" title="HUD Display Palette">
+              <option value="default">🖥️ OLED Default</option>
+              <option value="theme-night-red">🔴 Night-Vision Red</option>
+              <option value="theme-amber-v1">🟠 Valentine-1 Amber</option>
+              <option value="theme-colorblind">🔵 Colour-Blind Safe</option>
+            </select>
+          </div>
+
+          <div class="control-row" style="justify-content:space-between;font-size:11px;font-family:var(--font-mono);">
+            <label class="nowrap"><input type="checkbox" id="chk-gravel-suppress" /> Suppress Gravel</label>
+            <label class="nowrap"><input type="checkbox" id="chk-holiday-preset" /> Holiday Toll Preset</label>
+            <button id="btn-copilot-toggle" class="btn">CO-PILOT: LOCKED</button>
+          </div>
+        </div>
+
+        <!-- Center Column: Geiger Proximity Bar + Polar Radar Scope + Giant 1-Tap Logger -->
+        <div class="radar-center-column">
+          <div id="geiger-banner" class="geiger-alert-banner">
+            <div class="geiger-top-row">
+              <span id="geiger-zone-title" class="geiger-zone-title">RADAR READY — SCANNING NZ CORRIDOR</span>
+              <span id="geiger-distance-readout" class="geiger-distance-readout">480 m</span>
+            </div>
+            <div class="geiger-bars">
+              <div id="geiger-seg-1" class="geiger-seg lit-green"></div>
+              <div id="geiger-seg-2" class="geiger-seg lit-green"></div>
+              <div id="geiger-seg-3" class="geiger-seg"></div>
+              <div id="geiger-seg-4" class="geiger-seg"></div>
+              <div id="geiger-seg-5" class="geiger-seg"></div>
+              <div id="geiger-seg-6" class="geiger-seg"></div>
+              <div id="geiger-seg-7" class="geiger-seg"></div>
+              <div id="geiger-seg-8" class="geiger-seg"></div>
+              <div id="geiger-seg-9" class="geiger-seg"></div>
+              <div id="geiger-seg-10" class="geiger-seg"></div>
+            </div>
+            <div class="control-row" style="justify-content:space-between;">
+              <span id="geiger-detail-line" class="hud-metric-label" style="color:var(--text-secondary);">
+                SH1 Dome Valley (Northbound) • Left Wheel Track • Conf 98% (9x)
+              </span>
+              <span id="hud-accuracy-val" class="hud-metric-label" style="color:var(--accent-green);">±4.1m (142m ASL)</span>
+            </div>
+          </div>
+
+          <!-- Polar Radar Canvas Scope -->
+          <div class="radar-scope-wrapper">
+            <canvas id="radar-canvas"></canvas>
+            <div class="scope-overlay-top">
+              <span class="scope-pill">CONE: ±45° NZ KEEP-LEFT</span>
+              <div class="control-row">
+                <button id="btn-boot-sweep" class="btn">⚡ SELF-TEST SWEEP</button>
+                <button id="btn-mute-audio" class="btn">🔊 AUDIO ON</button>
+                <button id="btn-haptic-mode" class="btn">📳 HAPTIC+AUDIO</button>
+                <button id="btn-voice-trigger" class="btn">🎙️ VOICE LOG</button>
+              </div>
+            </div>
+
+            <!-- 4-Second Pass-By Verification Banner -->
+            <div id="passby-banner" class="passby-banner">
+              <span id="passby-label" class="nowrap" style="font-family:var(--font-mono);font-size:12px;font-weight:800;color:var(--accent-cyan);">
+                PASSING POTHOLE: STILL THERE OR FIXED?
+              </span>
+              <div class="control-row">
+                <button id="btn-passby-still" class="btn btn-amber">⚠️ STILL THERE (+1)</button>
+                <button id="btn-passby-fixed" class="btn btn-success">✅ FIXED / PATCHED</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Giant 1-Tap Hazard Logging Controls -->
+          <div class="one-tap-zone">
+            <button id="btn-log-rim" class="btn-giant-log">
+              <span id="btn-giant-title">💥 TAP TO LOG POTHOLE (LEFT LANE)</span>
+              <span id="btn-giant-sub" class="btn-giant-sub">1.75s Reaction Lookback • Auto-Deduplicates ≤8m • Tags NZ Left-Hand Lane</span>
+            </button>
+            <button id="btn-log-bump" class="btn-secondary-log">
+              <span>⚠️ LOG MODERATE BUMP</span>
+              <span style="font-size:10px;color:var(--text-secondary);">Suspension Jolt / Rut</span>
+            </button>
+            <button id="btn-log-slip" class="btn-secondary-log" style="color:var(--accent-cyan);border-color:var(--accent-cyan);">
+              <span>⛰️ LOG SLIP / DROPOUT</span>
+              <span style="font-size:10px;color:var(--text-secondary);">Washout / Cycle Shoulder</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Column: Drive Simulator & Approaching Corridor Feed -->
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-title">CORRIDOR FEED &amp; DRIVE SIM</span>
+            <button id="btn-sim-drive" class="btn btn-success">▶ SIMULATE NZ DRIVE</button>
+          </div>
+
+          <div class="control-row">
+            <select id="sim-corridor-select" class="input-field">
+              <option value="SH1-DOME">Corridor: SH1 Dome Valley (Swiss Cheese Cluster)</option>
+              <option value="SH1-DESERT">Corridor: SH1 Desert Road Summit (Southbound)</option>
+              <option value="SH73-OTIRA">Corridor: SH73 Otira Viaduct / Arthur’s Pass</option>
+              <option value="SH2-REMUTAKA">Corridor: SH2 Remutaka Hill Descent</option>
+            </select>
+          </div>
+
+          <div class="control-row">
+            <select id="quick-hazard-type" class="input-field">
+              <option value="Pothole">Type: Pothole Crater</option>
+              <option value="Slip / Washout / Dropout">Type: Slip / Dropout</option>
+              <option value="Cycleway / Shoulder">Type: Cycleway / Shoulder</option>
+              <option value="Bridge Deck Defect">Type: One-Lane / Bridge Deck</option>
+            </select>
+            <select id="quick-road-type" class="input-field">
+              <option value="State Highway">State Highway (NZTA)</option>
+              <option value="Local Sealed Road">Local Council Sealed</option>
+              <option value="Bridge Deck">Bridge / Viaduct Deck</option>
+              <option value="Unsealed Gravel Road">Unsealed Metal / Gravel</option>
+            </select>
+          </div>
+
+          <label class="nowrap" style="font-size:11px;font-family:var(--font-mono);color:var(--accent-cyan);">
+            <input type="checkbox" id="quick-wet-flag" checked /> 🌧️ Flag as Wet-Weather / Water-Filled Invisible Crater
+          </label>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:24%;">SEVERITY</th>
+                  <th style="width:32%;">CORRIDOR</th>
+                  <th style="width:18%;">TRACK</th>
+                  <th style="width:13%;">DIST</th>
+                  <th style="width:13%;">CONF</th>
+                </tr>
+              </thead>
+              <tbody id="approaching-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="telemetry-grid" style="grid-template-columns:repeat(3,1fr);">
+            <div class="hud-metric-box">
+              <span class="hud-metric-label">KM SCANNED</span>
+              <span id="stat-km" class="hud-metric-value" style="font-size:14px;color:var(--accent-cyan);">428.6 km</span>
+            </div>
+            <div class="hud-metric-box">
+              <span class="hud-metric-label">ACTIVE LOGS</span>
+              <span id="stat-logged" class="hud-metric-value" style="font-size:14px;color:var(--accent-amber);">11</span>
+            </div>
+            <div class="hud-metric-box">
+              <span class="hud-metric-label">FIXED</span>
+              <span id="stat-fixed" class="hud-metric-value" style="font-size:14px;color:var(--accent-green);">1</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           VIEW 2: REVIEW, MANUAL INPUT & PHOTO REFERENCE SIZE ESTIMATOR
+           ==================================================================== -->
+      <section id="view-review" class="view-panel" aria-label="Review and Manual Input Mode">
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-title">LOGGED NZ HAZARDS &amp; COUNCIL SLA TRACKER</span>
+            <div class="control-row">
+              <select id="review-filter-select" class="input-field" style="width:190px;">
+                <option value="ALL">Filter: All NZ Hazards</option>
+                <option value="SH">Waka Kotahi State Highways</option>
+                <option value="LOCAL">67 Local Councils Only</option>
+                <option value="RIM">Rim Benders Only</option>
+                <option value="UNREPORTED">Unreported Only</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:11%;">ID</th>
+                  <th style="width:12%;">SEVERITY</th>
+                  <th style="width:20%;">ROAD / SH</th>
+                  <th style="width:18%;">NZ LEFT LANE</th>
+                  <th style="width:13%;">RAMM RS/RP</th>
+                  <th style="width:14%;">AUTHORITY</th>
+                  <th style="width:12%;">SLA STATUS</th>
+                  <th style="width:14%;">ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="review-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-title">MANUAL HAZARD ENTRY &amp; PHOTO REFERENCE SIZING</span>
+          </div>
+
+          <!-- Reference Object Photo Scale Calculator -->
+          <div class="nz-lane-diagram">
+            <span class="hud-metric-label" style="color:var(--accent-amber);">PHOTO REFERENCE SCALE ESTIMATOR</span>
+            <div class="control-row">
+              <select id="scale-ref-type" class="input-field">
+                <option value="100">Reference: NZ White Edge Line Width (100 mm)</option>
+                <option value="26.5">Reference: NZ $2 Coin Diameter (26.5 mm)</option>
+                <option value="300">Reference: Size 10 Work Boot Length (300 mm)</option>
+                <option value="215">Reference: Standard 215mm Car Tyre Tread Width</option>
+              </select>
+              <input id="scale-multiplier" type="number" step="0.5" value="6.0" class="input-field" style="width:110px;" title="Crater width as multiple of reference object" />
+              <button id="btn-calc-scale" class="btn btn-amber">📏 ESTIMATE SIZE</button>
+            </div>
+          </div>
+
+          <div class="telemetry-grid">
+            <div>
+              <label class="hud-metric-label">ROAD NAME OR STATE HIGHWAY</label>
+              <input id="man-road" class="input-field" value="SH1 Waikato Expressway (Northbound)" />
+            </div>
+            <div>
+              <label class="hud-metric-label">TRAVEL HEADING (0°–360°)</label>
+              <input id="man-heading" type="number" class="input-field" value="340" />
+            </div>
+            <div>
+              <label class="hud-metric-label">LATITUDE (WGS84)</label>
+              <input id="man-lat" type="number" step="0.0001" class="input-field" value="-37.5520" />
+            </div>
+            <div>
+              <label class="hud-metric-label">LONGITUDE (WGS84)</label>
+              <input id="man-lon" type="number" step="0.0001" class="input-field" value="175.1540" />
+            </div>
+            <div>
+              <label class="hud-metric-label">SEVERITY</label>
+              <select id="man-severity" class="input-field">
+                <option value="Rim Bender">Rim Bender (Critical)</option>
+                <option value="Bump">Bump (Moderate)</option>
+                <option value="Ding">Ding (Minor Seal Defect)</option>
+              </select>
+            </div>
+            <div>
+              <label class="hud-metric-label">HAZARD CATEGORY</label>
+              <select id="man-type" class="input-field">
+                <option value="Pothole">Pothole Crater</option>
+                <option value="Slip / Washout / Dropout">Slip / Washout / Dropout</option>
+                <option value="Cycleway / Shoulder">Cycleway / Shoulder Hazard</option>
+                <option value="One-Lane Bridge Defect">One-Lane Bridge / Cattle Stop</option>
+              </select>
+            </div>
+            <div>
+              <label class="hud-metric-label">ESTIMATED DIAMETER (CM)</label>
+              <input id="man-diam" type="number" class="input-field" value="60" />
+            </div>
+            <div>
+              <label class="hud-metric-label">ESTIMATED DEPTH (CM)</label>
+              <input id="man-depth" type="number" class="input-field" value="13" />
+            </div>
+          </div>
+
+          <div>
+            <label class="hud-metric-label">DEFECT DESCRIPTION &amp; LANDMARK NOTES</label>
+            <input id="man-notes" class="input-field" value="Deep left wheel track blowout 150m north of culvert marker." />
+          </div>
+
+          <button id="btn-manual-save" class="btn btn-primary" style="padding:10px;">
+            💾 SAVE HAZARD TO OFFLINE DB &amp; RESOLVE NZ COUNCIL / RAMM
+          </button>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           VIEW 3: TRIP PLANNER CORRIDOR SCANNER & DASHCAM .SRT EXPORTER
+           ==================================================================== -->
+      <section id="view-planner" class="view-panel" aria-label="Trip Corridor Scanner">
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-title">NZ TRIP CORRIDOR SCANNER</span>
+          </div>
+
+          <div>
+            <label class="hud-metric-label">ORIGIN TOWN / CITY (GAZETTEER)</label>
+            <select id="trip-origin-select" class="input-field"></select>
+          </div>
+
+          <div>
+            <label class="hud-metric-label">DESTINATION TOWN / CITY (GAZETTEER)</label>
+            <select id="trip-dest-select" class="input-field"></select>
+          </div>
+
+          <button id="btn-scan-corridor" class="btn btn-primary" style="padding:10px;">
+            🔍 SCAN ROUTE CORRIDOR FOR POTHOLES &amp; SLIPS
+          </button>
+
+          <div class="telemetry-grid">
+            <div class="hud-metric-box">
+              <span class="hud-metric-label">CORRIDOR VECTOR</span>
+              <span id="trip-summary-dist" class="hud-metric-value" style="font-size:15px;">134.2 km (SSE)</span>
+            </div>
+            <div class="hud-metric-box">
+              <span class="hud-metric-label">TOTAL HAZARDS</span>
+              <span id="trip-summary-total" class="hud-metric-value" style="font-size:15px;color:var(--accent-amber);">4 Hazards</span>
+            </div>
+            <div class="hud-metric-box">
+              <span class="hud-metric-label">CRITICAL CRATERS</span>
+              <span id="trip-summary-rim" class="hud-metric-value" style="font-size:15px;color:var(--accent-red);">2 Rim Benders</span>
+            </div>
+            <div class="hud-metric-box">
+              <span class="hud-metric-label">SLIPS / WASHOUTS</span>
+              <span id="trip-summary-slips" class="hud-metric-value" style="font-size:15px;color:var(--accent-cyan);">0 Slips</span>
+            </div>
+          </div>
+
+          <div class="nz-lane-diagram">
+            <span class="hud-metric-label" style="color:var(--accent-cyan);">DASHCAM CLIP SUBTITLE OVERLAY (.SRT)</span>
+            <span style="font-size:11px;color:var(--text-secondary);">
+              Exports synchronized GPS + RAMM RS/RP + G-Force timestamps so dashcam video clips automatically display pothole telemetry for insurance or NZTA claims.
+            </span>
+            <button id="btn-export-srt" class="btn btn-success">🎬 EXPORT DASHCAM .SRT SUBTITLE FILE</button>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-title">HAZARDS ALONG SELECTED TRIP CORRIDOR</span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:13%;">ID</th>
+                  <th style="width:14%;">SEVERITY</th>
+                  <th style="width:16%;">CATEGORY</th>
+                  <th style="width:23%;">CORRIDOR</th>
+                  <th style="width:16%;">NZ LANE SIDE</th>
+                  <th style="width:10%;">RAMM</th>
+                  <th style="width:8%;">WEATHER</th>
+                </tr>
+              </thead>
+              <tbody id="trip-corridor-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           VIEW 4: NZ COUNCIL, WAKA KOTAHI NZTA, DAMAGE CLAIM, OIA & LEAGUE TABLE
+           ==================================================================== -->
+      <section id="view-council" class="view-panel" aria-label="NZ Council and NZTA Export Suite">
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-title">COUNCIL / NZTA / CLAIM / LGOIMA GENERATOR</span>
+            <div class="control-row">
+              <button class="btn btn-doc-mode" data-mode="email">📧 Council Email</button>
+              <button class="btn btn-doc-mode" data-mode="claim">🛞 Rim Claim Dossier</button>
+              <button class="btn btn-doc-mode" data-mode="oia">⚖️ OIA / LGOIMA</button>
+              <button class="btn btn-doc-mode" data-mode="snap">📱 Snap Send Solve</button>
+            </div>
+          </div>
+
+          <pre id="council-export-preview" class="export-preview"></pre>
+
+          <div class="control-row">
+            <button id="btn-send-mailto" class="btn btn-primary">🚀 LAUNCH COUNCIL / NZTA EMAIL</button>
+            <button id="btn-copy-preview" class="btn btn-success">📋 COPY DOSSIER</button>
+            <button id="btn-export-csv" class="btn">📊 BULK CSV</button>
+            <button id="btn-export-geojson" class="btn">🗺️ GEOJSON</button>
+            <button id="btn-backup-db" class="btn btn-amber">🔐 ENCRYPTED BACKUP</button>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-title">NZ COUNCIL &amp; WAKA KOTAHI ACCOUNTABILITY LEAGUE TABLE</span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:8%;">RANK</th>
+                  <th style="width:30%;">AUTHORITY (NZTA / 67 COUNCILS)</th>
+                  <th style="width:22%;">CONTRACTOR</th>
+                  <th style="width:10%;">OPEN</th>
+                  <th style="width:10%;">CRIT</th>
+                  <th style="width:10%;">FIXED</th>
+                  <th style="width:10%;">SLA</th>
+                </tr>
+              </thead>
+              <tbody id="league-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER STATUS & KEYBOARD NAVIGATION BAR -->
+    <footer class="footer-bar">
+      <div id="footer-status-msg" class="nowrap">
+        SYSTEM READY • 100% OFFLINE PWA • 67 NZ COUNCILS + WAKA KOTAHI NZTA RAMM LOADED
+      </div>
+      <div class="kbd-hint">
+        <span><kbd>←</kbd><kbd>→</kbd> View</span>
+        <span><kbd>↑</kbd> Radar Home</span>
+        <span><kbd>↓</kbd> Next Corridor</span>
+        <span><kbd>Space</kbd> Pause</span>
+        <span><kbd>1</kbd>-<kbd>9</kbd> Timer</span>
+        <span><kbd>0</kbd> Freeze</span>
+        <span><kbd>A</kbd> <a href="admin.html" target="_blank" style="color:var(--accent-cyan);text-decoration:none;">Ops Admin</a></span>
+        <span><kbd>R</kbd> <a href="remote.html" target="_blank" style="color:var(--accent-amber);text-decoration:none;">Remote Co-Pilot</a></span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="./js/nz-councils.js"></script>
+  <script src="./js/db.js"></script>
+  <script src="./js/audio-radar.js"></script>
+  <script src="./js/geo-lane.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>

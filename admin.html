@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rim-Reaper-NZ — Contractor Ops, SLA &amp; 67 Council / NZTA Admin</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="top-bar">
+      <div class="brand-cluster">
+        <div class="brand-logo">OPS</div>
+        <div class="brand-title">RIM-REAPER-NZ // CONTRACTOR &amp; COUNCIL OPS ADMIN</div>
+        <span class="brand-sub">WAKA KOTAHI &amp; 67 TA DISPATCH</span>
+      </div>
+      <div class="top-controls">
+        <a href="./index.html" class="btn">⬅ RADAR HUD</a>
+        <a href="./remote.html" target="_blank" class="btn btn-amber">📱 REMOTE CO-PILOT (R)</a>
+        <button id="admin-reset-seed" class="btn">🔄 RESET SEED DATA</button>
+        <div class="hud-clock" id="admin-clock">20<span class="blink-colon">:</span>00<span class="blink-colon">:</span>00</div>
+      </div>
+    </header>
+
+    <main class="main-stage">
+      <section class="view-panel active-view" style="grid-template-columns: 1.35fr 0.65fr;">
+        <!-- Incident Queue & Contractor Dispatch Table -->
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-title">NATIONAL INCIDENT DISPATCH QUEUE (RAMM RS/RP)</span>
+            <div class="control-row">
+              <select id="admin-council-filter" class="input-field" style="width:240px;">
+                <option value="ALL">All Authorities (NZTA + 67 Councils)</option>
+                <option value="NZTA">Waka Kotahi NZTA State Highways Only</option>
+                <option value="COUNCIL">Local Territorial Authorities Only</option>
+                <option value="BREACH">Overdue SLA Breaches Only</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:10%;">ID</th>
+                  <th style="width:12%;">SEVERITY</th>
+                  <th style="width:20%;">CORRIDOR &amp; RAMM</th>
+                  <th style="width:18%;">AUTHORITY &amp; CREW</th>
+                  <th style="width:15%;">NZ LEFT LANE</th>
+                  <th style="width:11%;">STATUS</th>
+                  <th style="width:14%;">DISPATCH</th>
+                </tr>
+              </thead>
+              <tbody id="admin-queue-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right Column: 67 NZ Council Directory Lookup & Encrypted DB Restore -->
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-title">ALL 67 NZ COUNCILS &amp; NZTA DIRECTORY</span>
+          </div>
+
+          <input id="council-search-input" class="input-field" placeholder="Search 67 Councils, Wards, or Contractors (e.g. Far North, Fulton Hogan, Christchurch)..." />
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:36%;">COUNCIL / TA</th>
+                  <th style="width:28%;">WARD</th>
+                  <th style="width:22%;">CONTRACTOR</th>
+                  <th style="width:14%;">SLA</th>
+                </tr>
+              </thead>
+              <tbody id="directory-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer-bar">
+      <div id="admin-status" class="nowrap">LIVE SYNC CONNECTED • BROADCASTING TO RADAR HUD &amp; REMOTE CO-PILOT</div>
+      <div class="kbd-hint">
+        <span><kbd>A</kbd> Admin</span>
+        <span><kbd>R</kbd> Remote</span>
+        <span><kbd>0</kbd> Freeze</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="./js/nz-councils.js"></script>
+  <script src="./js/db.js"></script>
+  <script>
+    (function () {
+      function tickClock() {
+        const d = new Date();
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        const ss = String(d.getSeconds()).padStart(2, '0');
+        document.getElementById('admin-clock').innerHTML =
+          hh + '<span class="blink-colon">:</span>' + mm + '<span class="blink-colon">:</span>' + ss;
+      }
+      setInterval(tickClock, 1000);
+      tickClock();
+
+      async function renderQueue() {
+        const list = await window.RimReaperDB.getAllHazards();
+        const filter = document.getElementById('admin-council-filter').value;
+        const filtered = list.filter((h) => {
+          if (filter === 'NZTA') return h.isStateHighway;
+          if (filter === 'COUNCIL') return !h.isStateHighway;
+          if (filter === 'BREACH') {
+            return h.status !== 'Fixed' && h.exportedAt && (Date.now() - h.exportedAt) / 3600000 > (h.slaHours || 48);
+          }
+          return true;
+        });
+
+        const tbody = document.getElementById('admin-queue-tbody');
+        tbody.innerHTML = filtered
+          .map((h) => {
+            const sevClass = h.severity === 'Rim Bender' ? 'sev-rim' : h.severity === 'Bump' ? 'sev-bump' : 'sev-ding';
+            return `<tr>
+              <td style="font-family:var(--font-mono);font-weight:800;">${h.id}</td>
+              <td><span class="status-pill ${sevClass}">${h.severity}</span></td>
+              <td>${h.roadName} <span style="color:var(--accent-cyan);">(${h.rammRef})</span></td>
+              <td>${h.authorityName} (${h.contractor})</td>
+              <td>${h.laneSide}</td>
+              <td><span class="status-pill ${h.status === 'Fixed' ? 'stat-fixed' : 'sev-bump'}">${h.status}</span></td>
+              <td>
+                <button class="btn btn-dispatch" data-id="${h.id}" data-status="Exported">Crew</button>
+                <button class="btn btn-success btn-dispatch" data-id="${h.id}" data-status="Fixed">Fix</button>
+                <button class="btn btn-del" data-id="${h.id}">✕</button>
+              </td>
+            </tr>`;
+          })
+          .join('');
+
+        tbody.querySelectorAll('.btn-dispatch').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-id');
+            const st = btn.getAttribute('data-status');
+            await window.RimReaperDB.updateHazard(id, {
+              status: st,
+              exportedAt: st === 'Exported' ? Date.now() : Date.now(),
+              fixedAt: st === 'Fixed' ? Date.now() : null
+            });
+            renderQueue();
+          });
+        });
+
+        tbody.querySelectorAll('.btn-del').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            await window.RimReaperDB.deleteHazard(btn.getAttribute('data-id'));
+            renderQueue();
+          });
+        });
+      }
+
+      function renderDirectory(q = '') {
+        const query = q.toLowerCase().trim();
+        const rows = [window.NZ_DATA.NZTA_AGENCY, ...window.NZ_DATA.COUNCILS].filter(
+          (c) =>
+            !query ||
+            c.name.toLowerCase().includes(query) ||
+            (c.ward && c.ward.toLowerCase().includes(query)) ||
+            (c.contractor && c.contractor.toLowerCase().includes(query))
+        );
+        document.getElementById('directory-tbody').innerHTML = rows
+          .map(
+            (c) => `<tr>
+            <td style="font-weight:700;">${c.name}</td>
+            <td>${c.ward || 'National SH1–SH99 Network'}</td>
+            <td>${c.contractor}</td>
+            <td style="font-family:var(--font-mono);color:var(--accent-amber);">${c.slaHours}h</td>
+          </tr>`
+          )
+          .join('');
+      }
+
+      document.getElementById('admin-council-filter').addEventListener('change', renderQueue);
+      document.getElementById('council-search-input').addEventListener('input', (e) => renderDirectory(e.target.value));
+      document.getElementById('admin-reset-seed').addEventListener('click', async () => {
+        await window.RimReaperDB.saveAllHazards([]);
+        await window.RimReaperDB.getAllHazards();
+        window.RimReaperDB.broadcast('db_restored', {});
+        renderQueue();
+      });
+
+      window.RimReaperDB.onUpdate(() => renderQueue());
+      window.addEventListener('keydown', (e) => {
+        const tag = (e.target && e.target.tagName ? e.target.tagName : '').toLowerCase();
+        if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+        if (e.key === 'r' || e.key === 'R') window.open('remote.html', '_blank');
+      });
+
+      renderQueue();
+      renderDirectory('');
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rim-Reaper-NZ — Passenger Co-Pilot &amp; Drive Telemetry Remote</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="top-bar">
+      <div class="brand-cluster">
+        <div class="brand-logo">REM</div>
+        <div class="brand-title">RIM-REAPER-NZ // PASSENGER CO-PILOT &amp; TELEMETRY REMOTE</div>
+        <span class="brand-sub">LIVE HUD INJECTOR</span>
+      </div>
+      <div class="top-controls">
+        <a href="./index.html" class="btn">⬅ RADAR HUD</a>
+        <a href="./admin.html" target="_blank" class="btn">🛠️ OPS ADMIN (A)</a>
+        <div class="hud-clock" id="remote-clock">20<span class="blink-colon">:</span>00<span class="blink-colon">:</span>00</div>
+      </div>
+    </header>
+
+    <main class="main-stage">
+      <section class="view-panel active-view" style="grid-template-columns: 1fr 1fr;">
+        <!-- Left Panel: Passenger Co-Pilot Instant Logger -->
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-title">PASSENGER CO-PILOT INSTANT LOGGER</span>
+          </div>
+
+          <p class="nowrap" style="font-size:11.5px;color:var(--text-secondary);">
+            Triggers immediate Left-Hand Lane hazard logging on the primary Radar HUD with 1.75s reaction lookback.
+          </p>
+
+          <div class="telemetry-grid">
+            <div>
+              <label class="hud-metric-label">WHEEL TRACK POSITION (NZ LEFT LANE)</label>
+              <select id="rem-track" class="input-field">
+                <option value="Left Wheel Track (Verge Side)">Left Wheel Track (Verge Side)</option>
+                <option value="Center Lane">Center of Left Lane</option>
+                <option value="Right Wheel Track (Centerline Side)">Right Wheel Track (Centerline Side)</option>
+              </select>
+            </div>
+            <div>
+              <label class="hud-metric-label">HAZARD CATEGORY</label>
+              <select id="rem-type" class="input-field">
+                <option value="Pothole">Pothole Crater</option>
+                <option value="Slip / Washout / Dropout">Slip / Washout / Dropout</option>
+                <option value="Cycleway / Shoulder">Cycleway / Shoulder Hazard</option>
+                <option value="Bridge Deck Defect">One-Lane / Bridge Deck</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="one-tap-zone" style="grid-template-columns: 1fr 1fr; margin-top:6px;">
+            <button id="rem-btn-rim" class="btn-giant-log">
+              <span>💥 LOG RIM BENDER</span>
+              <span class="btn-giant-sub">Critical Crater (≥60cm / 2.9G)</span>
+            </button>
+            <button id="rem-btn-bump" class="btn-secondary-log">
+              <span>⚠️ LOG BUMP / RUT</span>
+              <span style="font-size:10px;color:var(--text-secondary);">Moderate Delamination</span>
+            </button>
+          </div>
+
+          <div class="nz-lane-diagram" style="margin-top:8px;">
+            <span class="hud-metric-label" style="color:var(--accent-cyan);">OPPOSITE-CARRIAGEWAY FILTER TEST</span>
+            <span style="font-size:11px;color:var(--text-secondary);">
+              Inject a pothole on the opposing lane (180° reverse heading) to verify that the Radar HUD ignores opposite-direction potholes.
+            </span>
+            <button id="rem-btn-opposing" class="btn btn-amber">
+              🔄 INJECT OPPOSING-LANE POTHOLE (VERIFY SUPPRESSION)
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Panel: Live Vehicle Telemetry Feeder -->
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-title">LIVE VEHICLE TELEMETRY FEEDER (SYNCED TO HUD)</span>
+          </div>
+
+          <div class="telemetry-grid">
+            <div>
+              <label class="hud-metric-label">SIMULATED SPEED (KM/H)</label>
+              <input id="rem-speed" type="range" min="0" max="115" value="92" class="input-field" />
+              <span id="rem-speed-lbl" class="hud-metric-value" style="color:var(--accent-green);">92 km/h</span>
+            </div>
+            <div>
+              <label class="hud-metric-label">COMPASS HEADING (0°–360°)</label>
+              <input id="rem-heading" type="range" min="0" max="359" value="345" class="input-field" />
+              <span id="rem-heading-lbl" class="hud-metric-value">345° NNW</span>
+            </div>
+            <div>
+              <label class="hud-metric-label">LATITUDE</label>
+              <input id="rem-lat" type="number" step="0.0002" value="-36.3652" class="input-field" />
+            </div>
+            <div>
+              <label class="hud-metric-label">LONGITUDE</label>
+              <input id="rem-lon" type="number" step="0.0002" value="174.6210" class="input-field" />
+            </div>
+          </div>
+
+          <div>
+            <label class="hud-metric-label">QUICK TELEPORT TO NZ CORRIDOR</label>
+            <select id="rem-preset" class="input-field">
+              <option value="-36.3652,174.6210,345,SH1 Dome Valley (Northbound)">SH1 Dome Valley (Approaching 3-Crater Cluster)</option>
+              <option value="-39.2935,175.7385,185,SH1 Desert Road (Southbound)">SH1 Desert Road Summit (Southbound)</option>
+              <option value="-42.9052,171.5612,280,SH73 Otira Viaduct (Westbound)">SH73 Otira Viaduct / Arthur’s Pass</option>
+              <option value="-44.7648,167.9905,300,SH94 Homer Tunnel Approach">SH94 Homer Tunnel Approach (Milford Road)</option>
+            </select>
+          </div>
+
+          <button id="rem-btn-push-telemetry" class="btn btn-primary" style="padding:12px;">
+            📡 BROADCAST TELEMETRY POSITION TO RADAR HUD
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer-bar">
+      <div id="rem-status" class="nowrap">CO-PILOT REMOTE READY • BROADCAST CHANNEL LINKED</div>
+      <div class="kbd-hint">
+        <span><kbd>A</kbd> Ops Admin</span>
+        <span><kbd>R</kbd> Remote</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="./js/nz-councils.js"></script>
+  <script src="./js/db.js"></script>
+  <script src="./js/geo-lane.js"></script>
+  <script>
+    (function () {
+      function tickClock() {
+        const d = new Date();
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        const ss = String(d.getSeconds()).padStart(2, '0');
+        document.getElementById('remote-clock').innerHTML =
+          hh + '<span class="blink-colon">:</span>' + mm + '<span class="blink-colon">:</span>' + ss;
+      }
+      setInterval(tickClock, 1000);
+      tickClock();
+
+      const speedInput = document.getElementById('rem-speed');
+      const headingInput = document.getElementById('rem-heading');
+
+      function pushTelemetry() {
+        const speedKmh = Number(speedInput.value);
+        const heading = Number(headingInput.value);
+        const lat = parseFloat(document.getElementById('rem-lat').value);
+        const lon = parseFloat(document.getElementById('rem-lon').value);
+        const presetTxt = document.getElementById('rem-preset').selectedOptions[0].text;
+        const wheelTrack = document.getElementById('rem-track').value;
+
+        document.getElementById('rem-speed-lbl').textContent = speedKmh + ' km/h';
+        document.getElementById('rem-heading-lbl').textContent =
+          heading + '° ' + window.GeoLaneEngine.headingToCardinal(heading);
+
+        window.GeoLaneEngine.setManualTelemetry({
+          lat,
+          lon,
+          speedKmh,
+          heading,
+          wheelTrack,
+          roadName: presetTxt
+        });
+        document.getElementById('rem-status').textContent =
+          'BROADCASTED TELEMETRY: ' + lat.toFixed(4) + ', ' + lon.toFixed(4) + ' @ ' + speedKmh + ' km/h';
+      }
+
+      speedInput.addEventListener('input', pushTelemetry);
+      headingInput.addEventListener('input', pushTelemetry);
+      document.getElementById('rem-btn-push-telemetry').addEventListener('click', pushTelemetry);
+
+      document.getElementById('rem-preset').addEventListener('change', (e) => {
+        const parts = e.target.value.split(',');
+        document.getElementById('rem-lat').value = parts[0];
+        document.getElementById('rem-lon').value = parts[1];
+        headingInput.value = parts[2];
+        pushTelemetry();
+      });
+
+      async function remoteLog(severity, opposite = false) {
+        const lat = parseFloat(document.getElementById('rem-lat').value);
+        const lon = parseFloat(document.getElementById('rem-lon').value);
+        const rawHeading = Number(headingInput.value);
+        const heading = opposite ? (rawHeading + 180) % 360 : rawHeading;
+        const cardinal = window.GeoLaneEngine.headingToCardinal(heading);
+        const res = await window.RimReaperDB.logHazard({
+          lat,
+          lon,
+          heading,
+          cardinal,
+          laneSide: cardinal + '-Bound Left-Hand Lane (LHL)',
+          wheelTrack: document.getElementById('rem-track').value,
+          severity,
+          hazardType: document.getElementById('rem-type').value,
+          roadType: 'State Highway',
+          roadName: document.getElementById('rem-preset').value.split(',')[3] || 'SH1 Corridor',
+          wetWeatherRisk: true,
+          diameterCm: severity === 'Rim Bender' ? 65 : 40,
+          depthCm: severity === 'Rim Bender' ? 14 : 8,
+          gForce: severity === 'Rim Bender' ? 2.9 : 2.0,
+          accuracyM: 3.8,
+          notes: opposite
+            ? 'Logged on opposing carriageway (180° opposite bearing) to verify directional filter.'
+            : 'Logged via Passenger Co-Pilot Remote.'
+        });
+        document.getElementById('rem-status').textContent =
+          'LOGGED ' + res.record.id + ' (' + res.record.laneSide + ')';
+      }
+
+      document.getElementById('rem-btn-rim').addEventListener('click', () => remoteLog('Rim Bender', false));
+      document.getElementById('rem-btn-bump').addEventListener('click', () => remoteLog('Bump', false));
+      document.getElementById('rem-btn-opposing').addEventListener('click', () => remoteLog('Rim Bender', true));
+    })();
+  </script>
+</body>
+</html>
