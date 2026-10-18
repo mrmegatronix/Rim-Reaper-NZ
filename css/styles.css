@@ -444,17 +444,19 @@ h3,
   color: var(--accent-amber);
 }
 
+/* Mandatory 32px Progress / Geiger Alert Bar Thickness */
 .geiger-bars {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
-  gap: 5px;
-  height: 14px;
+  gap: 6px;
+  height: 32px;
 }
 
 .geiger-seg {
   background: #141e2b;
-  border-radius: 3px;
+  border-radius: 4px;
   border: 1px solid #223247;
+  height: 32px;
   transition: background 0.1s ease;
 }
 
@@ -462,25 +464,110 @@ h3,
 .geiger-seg.lit-amber { background: var(--accent-amber); box-shadow: 0 0 8px var(--accent-amber-glow); }
 .geiger-seg.lit-red { background: var(--accent-red); box-shadow: 0 0 10px var(--accent-red-glow); }
 
-/* Radar Polar Scope + Interactive Map Container */
+.minimal-hud-speed {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  background: #060b12;
+  border: 2px solid var(--accent-green);
+  border-radius: 7px;
+  padding: 2px 10px;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--accent-green);
+  flex-shrink: 0;
+}
+
+.minimal-hud-speed small {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.minimal-hud-heading {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 212, 255, 0.14);
+  border: 1px solid var(--accent-cyan);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent-cyan);
+  flex-shrink: 0;
+}
+
+/* Radar Polar Scope + Interactive Leaflet Map Container */
 .radar-scope-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 220px;
+  min-height: 240px;
   background: radial-gradient(circle at center, #0c1824 0%, #05080d 80%);
   border: 1px solid var(--border-bright);
   border-radius: 10px;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+}
+
+.radar-scope-wrapper.split-map-radar {
+  grid-template-columns: 1.15fr 0.85fr;
+}
+
+.radar-scope-wrapper.mode-map-only {
+  grid-template-columns: 1fr;
+}
+
+.radar-scope-wrapper.mode-map-only .radar-canvas-pane {
+  display: none;
+}
+
+.radar-scope-wrapper.mode-scope-only {
+  grid-template-columns: 1fr;
+}
+
+.radar-scope-wrapper.mode-scope-only .leaflet-hud-map {
+  display: none;
+}
+
+.leaflet-hud-map {
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  background: #070d14;
+  border-right: 1px solid var(--border-bright);
+  z-index: 1;
+}
+
+.radar-canvas-pane {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  background: radial-gradient(circle at center, #0c1824 0%, #05080d 85%);
 }
 
 #radar-canvas {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+.secondary-leaflet-map {
+  width: 100%;
+  height: 260px;
+  min-height: 230px;
+  border-radius: 8px;
+  border: 1px solid var(--border-bright);
+  background: #070d14;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+/* Dark HUD Map Tile Filter */
+.leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(180deg) brightness(94%) contrast(92%);
 }
 
 .scope-overlay-top {
@@ -492,6 +579,7 @@ h3,
   justify-content: space-between;
   pointer-events: none;
   gap: 8px;
+  z-index: 500;
 }
 
 .scope-pill {
@@ -510,7 +598,7 @@ h3,
   bottom: 12px;
   left: 12px;
   right: 12px;
-  background: rgba(12, 20, 32, 0.95);
+  background: rgba(12, 20, 32, 0.96);
   border: 2px solid var(--accent-cyan);
   border-radius: 8px;
   padding: 8px 12px;
@@ -518,11 +606,43 @@ h3,
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  z-index: 20;
+  z-index: 520;
 }
 
 .passby-banner.visible {
   display: flex;
+}
+
+/* ==========================================================================
+   MINIMAL IN-CAR DRIVING MODE (Zero Clutter, Giant Touch Targets)
+   ========================================================================== */
+body.minimal-driving-mode #view-radar.active-view {
+  grid-template-columns: 1fr !important;
+}
+
+body.minimal-driving-mode .radar-side-panel,
+body.minimal-driving-mode .nav-tabs,
+body.minimal-driving-mode .footer-bar {
+  display: none !important;
+}
+
+body.minimal-driving-mode .app-shell {
+  grid-template-rows: 54px 1fr !important;
+}
+
+body.minimal-driving-mode .minimal-hud-speed {
+  font-size: 30px;
+  padding: 4px 14px;
+}
+
+body.minimal-driving-mode .btn-giant-log {
+  min-height: 92px;
+  font-size: 20px;
+}
+
+body.minimal-driving-mode .btn-secondary-log {
+  min-height: 92px;
+  font-size: 15px;
 }
 
 /* Giant Full-Width 1-Tap Pothole Logger Button */

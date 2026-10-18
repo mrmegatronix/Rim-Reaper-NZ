@@ -15,11 +15,23 @@ window.RimReaperApp = (function () {
   let currentViewIdx = 0;
   let currentCorridorIdx = 0;
   let coPilotUnlocked = false;
+  let minimalDrivingActive = false;
   let selectedHazardId = null;
   let cachedHazards = [];
   let sweepAngle = 0;
   let passByPromptHazardId = null;
   let passByTimeout = null;
+
+  // Interactive Leaflet Map Instances
+  let radarMap = null;
+  let radarVehicleMarker = null;
+  let radarConeLayer = null;
+  let radarMarkersLayer = null;
+  let reviewMap = null;
+  let reviewMarkersLayer = null;
+  let reviewClickMarker = null;
+  let plannerMap = null;
+  let plannerRouteLayer = null;
 
   // Slideshow / Kiosk Auto-Cycle Controls (per User Rules Section 3)
   let slideDurationMs = 20000;
@@ -90,8 +102,24 @@ window.RimReaperApp = (function () {
       if (tab) tab.classList.toggle('active', idx === currentViewIdx);
     });
 
-    if (viewName === 'review') renderReviewTable();
-    if (viewName === 'planner') runCorridorScan();
+    if (viewName === 'radar' && radarMap) {
+      setTimeout(() => radarMap.invalidateSize(), 80);
+    }
+    if (viewName === 'review') {
+      renderReviewTable();
+      setTimeout(() => {
+        if (reviewMap) {
+          reviewMap.invalidateSize();
+          renderReviewMapMarkers();
+        }
+      }, 80);
+    }
+    if (viewName === 'planner') {
+      runCorridorScan();
+      setTimeout(() => {
+        if (plannerMap) plannerMap.invalidateSize();
+      }, 80);
+    }
     if (viewName === 'council') {
       renderCouncilPreview('email');
       renderLeagueTable();
@@ -276,6 +304,10 @@ window.RimReaperApp = (function () {
     const juris = window.NZ_DATA.resolveJurisdiction(t.lat, t.lon, t.roadName);
 
     if (el('hud-speed-val')) el('hud-speed-val').textContent = `${t.speedKmh}`;
+    if (el('min-speed-num')) el('min-speed-num').textContent = `${t.speedKmh}`;
+    if (el('minimal-heading-pill')) {
+      el('minimal-heading-pill').textContent = `${t.heading}° ${t.cardinal} • NZ LEFT LANE`;
+    }
     if (el('hud-speed-limit')) el('hud-speed-limit').textContent = `${t.speedLimitKmh}`;
     if (el('hud-heading-val')) el('hud-heading-val').textContent = `${t.heading}° ${t.cardinal}`;
     if (el('hud-coords-val')) el('hud-coords-val').textContent = `${t.lat.toFixed(4)}, ${t.lon.toFixed(4)}`;
@@ -359,6 +391,7 @@ window.RimReaperApp = (function () {
       updateGeigerSegments(0);
     }
 
+    updateRadarMap();
     renderApproachingMiniList(scan.approachingList);
     renderDriverStatsBar();
   }
@@ -633,6 +666,8 @@ window.RimReaperApp = (function () {
         refreshTelemetryAndHUD();
       });
     });
+
+    renderReviewMapMarkers();
   }
 
   /**
@@ -684,6 +719,217 @@ window.RimReaperApp = (function () {
         })
         .join('');
     }
+
+    renderPlannerMapRoute(orig, dest, report.corridorHazards);
+  }
+
+  /**
+   * Initialize Interactive Leaflet Maps for Driving Radar, Review Log, and Trip Corridor Planner
+   */
+  function initLeafletMaps() {
+    if (typeof window.L === 'undefined') return;
+
+    const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const osmAttrib = '&copy; OpenStreetMap contributors &bull; Rim-Reaper-NZ';
+
+    // 1. Live Driving Radar Map (#radar-live-map)
+    if (el('radar-live-map') && !radarMap) {
+      const t = window.GeoLaneEngine.getState();
+      radarMap = window.L.map('radar-live-map', {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([t.lat, t.lon], 15);
+
+      window.L.tileLayer(osmUrl, { maxZoom: 19, attribution: osmAttrib }).addTo(radarMap);
+      radarMarkersLayer = window.L.layerGroup().addTo(radarMap);
+      radarConeLayer = window.L.layerGroup().addTo(radarMap);
+      updateRadarMap();
+    }
+
+    // 2. Review & Manual Input NZ Map (#review-nz-map)
+    if (el('review-nz-map') && !reviewMap) {
+      reviewMap = window.L.map('review-nz-map', {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([-39.5, 174.5], 6);
+
+      window.L.tileLayer(osmUrl, { maxZoom: 19, attribution: osmAttrib }).addTo(reviewMap);
+      reviewMarkersLayer = window.L.layerGroup().addTo(reviewMap);
+
+      // Click anywhere on Review Map to set Manual Entry Coordinates
+      reviewMap.on('click', (ev) => {
+        const lat = Number(ev.latlng.lat.toFixed(5));
+        const lon = Number(ev.latlng.lng.toFixed(5));
+        if (el('man-lat')) el('man-lat').value = lat;
+        if (el('man-lon')) el('man-lon').value = lon;
+        const juris = window.NZ_DATA.resolveJurisdiction(lat, lon);
+        if (el('man-road')) {
+          el('man-road').value = juris.isStateHighway
+            ? `${juris.highwayCode} (${juris.council.name})`
+            : `${juris.council.name} Local Road`;
+        }
+        if (reviewClickMarker) reviewMap.removeLayer(reviewClickMarker);
+        reviewClickMarker = window.L.circleMarker([lat, lon], {
+          radius: 9,
+          color: '#00d4ff',
+          fillColor: '#00d4ff',
+          fillOpacity: 0.7
+        })
+          .addTo(reviewMap)
+          .bindPopup(`<b>Manual Pin Selected</b><br>${lat}, ${lon}<br>${juris.primaryAgency.name}`)
+          .openPopup();
+        showToast(`Map Pin Selected: ${lat}, ${lon} (${juris.primaryAgency.name})`);
+      });
+
+      renderReviewMapMarkers();
+    }
+
+    // 3. Trip Corridor Route Scanner Map (#planner-nz-map)
+    if (el('planner-nz-map') && !plannerMap) {
+      plannerMap = window.L.map('planner-nz-map', {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([-38.5, 175.5], 6);
+
+      window.L.tileLayer(osmUrl, { maxZoom: 19, attribution: osmAttrib }).addTo(plannerMap);
+      plannerRouteLayer = window.L.layerGroup().addTo(plannerMap);
+    }
+  }
+
+  function updateRadarMap() {
+    if (!radarMap || typeof window.L === 'undefined') return;
+    const t = window.GeoLaneEngine.getState();
+
+    radarMap.setView([t.lat, t.lon], radarMap.getZoom() || 15, { animate: false });
+    radarConeLayer.clearLayers();
+    radarMarkersLayer.clearLayers();
+
+    // Draw Vehicle Left-Hand Lane Forward Vector Line (450m ahead)
+    const rad = (t.heading * Math.PI) / 180;
+    const endLat = t.lat + (450 * Math.cos(rad)) / 111320;
+    const endLon = t.lon + (450 * Math.sin(rad)) / (111320 * Math.cos((t.lat * Math.PI) / 180));
+
+    window.L.polyline(
+      [
+        [t.lat, t.lon],
+        [endLat, endLon]
+      ],
+      { color: '#00f58c', weight: 4, dashArray: '8, 6' }
+    ).addTo(radarConeLayer);
+
+    // Vehicle Marker
+    window.L.circleMarker([t.lat, t.lon], {
+      radius: 8,
+      color: '#ffffff',
+      weight: 2,
+      fillColor: '#00f58c',
+      fillOpacity: 1
+    })
+      .bindTooltip(`YOU (${t.speedKmh} km/h • ${t.cardinal} Left Lane)`)
+      .addTo(radarConeLayer);
+
+    // Plot All Hazards
+    cachedHazards.forEach((h) => {
+      const color =
+        h.status === 'Fixed'
+          ? '#00f58c'
+          : h.severity === 'Rim Bender'
+          ? '#ff2a2a'
+          : h.severity === 'Bump'
+          ? '#ffb000'
+          : '#00d4ff';
+
+      window.L.circleMarker([h.lat, h.lon], {
+        radius: h.severity === 'Rim Bender' ? 8 : 6,
+        color: '#ffffff',
+        weight: 1.5,
+        fillColor: color,
+        fillOpacity: 0.9
+      })
+        .bindPopup(
+          `<b>${h.id} — ${h.severity}</b><br>${h.roadName}<br>${h.laneSide} (${h.wheelTrack})<br>RAMM: ${h.rammRef}<br>Authority: ${h.authorityName}`
+        )
+        .addTo(radarMarkersLayer);
+    });
+  }
+
+  function renderReviewMapMarkers() {
+    if (!reviewMap || !reviewMarkersLayer || typeof window.L === 'undefined') return;
+    reviewMarkersLayer.clearLayers();
+    cachedHazards.forEach((h) => {
+      const color =
+        h.status === 'Fixed'
+          ? '#00f58c'
+          : h.severity === 'Rim Bender'
+          ? '#ff2a2a'
+          : h.severity === 'Bump'
+          ? '#ffb000'
+          : '#00d4ff';
+
+      const marker = window.L.circleMarker([h.lat, h.lon], {
+        radius: 7,
+        color: '#ffffff',
+        weight: 1.5,
+        fillColor: color,
+        fillOpacity: 0.9
+      }).bindPopup(
+        `<b>${h.id} (${h.severity})</b><br>${h.roadName}<br>${h.laneSide}<br>Authority: ${h.authorityName}`
+      );
+
+      marker.on('click', () => {
+        selectedHazardId = h.id;
+        showToast(`Selected ${h.id} on Map (${h.roadName})`);
+      });
+
+      marker.addTo(reviewMarkersLayer);
+    });
+  }
+
+  function renderPlannerMapRoute(orig, dest, corridorHazards) {
+    if (!plannerMap || !plannerRouteLayer || typeof window.L === 'undefined') return;
+    plannerRouteLayer.clearLayers();
+
+    const routeLine = window.L.polyline(
+      [
+        [orig.lat, orig.lon],
+        [dest.lat, dest.lon]
+      ],
+      { color: '#00d4ff', weight: 4, dashArray: '10, 6' }
+    ).addTo(plannerRouteLayer);
+
+    window.L.circleMarker([orig.lat, orig.lon], {
+      radius: 8,
+      color: '#ffffff',
+      fillColor: '#00f58c',
+      fillOpacity: 1
+    })
+      .bindPopup(`<b>ORIGIN: ${orig.name}</b>`)
+      .addTo(plannerRouteLayer);
+
+    window.L.circleMarker([dest.lat, dest.lon], {
+      radius: 8,
+      color: '#ffffff',
+      fillColor: '#ffb000',
+      fillOpacity: 1
+    })
+      .bindPopup(`<b>DESTINATION: ${dest.name}</b>`)
+      .addTo(plannerRouteLayer);
+
+    corridorHazards.forEach((h) => {
+      window.L.circleMarker([h.lat, h.lon], {
+        radius: 8,
+        color: '#ffffff',
+        weight: 2,
+        fillColor: h.severity === 'Rim Bender' ? '#ff2a2a' : '#ffb000',
+        fillOpacity: 0.95
+      })
+        .bindPopup(`<b>${h.id} — ${h.severity}</b><br>${h.roadName}<br>${h.laneSide}`)
+        .addTo(plannerRouteLayer);
+    });
+
+    try {
+      plannerMap.fitBounds(routeLine.getBounds().pad(0.25));
+    } catch (e) {}
   }
 
   async function downloadDashcamSRT() {
@@ -909,6 +1155,7 @@ window.RimReaperApp = (function () {
 
     populateTownSelects();
     initKeyboardControls();
+    initLeafletMaps();
     startRadarCanvasLoop();
 
     // Register Service Worker for 100% offline capability
@@ -937,6 +1184,43 @@ window.RimReaperApp = (function () {
       if (tab) tab.addEventListener('click', () => showView(idx));
     });
 
+    // Bind Minimal In-Car Driving Mode Toggle
+    if (el('btn-minimal-driving')) {
+      el('btn-minimal-driving').addEventListener('click', () => {
+        minimalDrivingActive = !minimalDrivingActive;
+        document.body.classList.toggle('minimal-driving-mode', minimalDrivingActive);
+        if (minimalDrivingActive && currentViewIdx !== 0) {
+          showView(0, true);
+        }
+        el('btn-minimal-driving').textContent = minimalDrivingActive
+          ? '✕ EXIT MINIMAL DRIVING'
+          : '🚗 MINIMAL DRIVING MODE';
+        el('btn-minimal-driving').className = minimalDrivingActive ? 'btn btn-primary' : 'btn btn-amber';
+        if (radarMap) setTimeout(() => radarMap.invalidateSize(), 120);
+      });
+    }
+
+    // Bind Map / Radar Scope Split View Controls
+    const splitWrap = el('radar-display-split');
+    const setRadarViewLayout = (modeClass, activeBtnId) => {
+      if (!splitWrap) return;
+      splitWrap.classList.remove('mode-map-only', 'mode-scope-only');
+      if (modeClass) splitWrap.classList.add(modeClass);
+      ['btn-view-split', 'btn-view-map', 'btn-view-scope'].forEach((id) => {
+        if (el(id)) el(id).className = id === activeBtnId ? 'btn btn-amber' : 'btn';
+      });
+      if (radarMap) setTimeout(() => radarMap.invalidateSize(), 90);
+    };
+    if (el('btn-view-split')) {
+      el('btn-view-split').addEventListener('click', () => setRadarViewLayout('', 'btn-view-split'));
+    }
+    if (el('btn-view-map')) {
+      el('btn-view-map').addEventListener('click', () => setRadarViewLayout('mode-map-only', 'btn-view-map'));
+    }
+    if (el('btn-view-scope')) {
+      el('btn-view-scope').addEventListener('click', () => setRadarViewLayout('mode-scope-only', 'btn-view-scope'));
+    }
+
     // Bind 1-Click Logo Switcher (Cycles Logo 1 -> Logo 2 -> Logo 3 -> Logo 4)
     const LOGOS = ['./logo.jpg', './logo_v2.jpg', './logo_v3.jpg', './logo_v4.jpg'];
     let logoIdx = 0;
@@ -953,17 +1237,27 @@ window.RimReaperApp = (function () {
       el('btn-boot-sweep').addEventListener('click', runBootSequence);
     }
 
-    // Bind Drive Simulator Button
-    if (el('btn-sim-drive')) {
-      el('btn-sim-drive').addEventListener('click', () => {
-        const corridor = el('sim-corridor-select') ? el('sim-corridor-select').value : 'SH1-DOME';
-        const active = window.GeoLaneEngine.toggleDriveSimulation(corridor, () => {
-          refreshTelemetryAndHUD();
-        });
+    // Bind Drive Simulator Buttons
+    const toggleSimDrive = () => {
+      const corridor = el('sim-corridor-select') ? el('sim-corridor-select').value : 'SH1-DOME';
+      const active = window.GeoLaneEngine.toggleDriveSimulation(corridor, () => {
+        refreshTelemetryAndHUD();
+      });
+      if (el('btn-sim-drive')) {
         el('btn-sim-drive').textContent = active ? '⏹ STOP SIM DRIVE' : '▶ SIMULATE NZ DRIVE';
         el('btn-sim-drive').className = active ? 'btn btn-primary' : 'btn btn-success';
-        if (active) runBootSequence();
-      });
+      }
+      if (el('btn-sim-drive-inline')) {
+        el('btn-sim-drive-inline').textContent = active ? '⏹ STOP SIM' : '▶ SIM DRIVE';
+        el('btn-sim-drive-inline').className = active ? 'btn btn-primary' : 'btn btn-success';
+      }
+      if (active) runBootSequence();
+    };
+    if (el('btn-sim-drive')) {
+      el('btn-sim-drive').addEventListener('click', toggleSimDrive);
+    }
+    if (el('btn-sim-drive-inline')) {
+      el('btn-sim-drive-inline').addEventListener('click', toggleSimDrive);
     }
 
     // Bind Giant 1-Tap Log Buttons

@@ -8,6 +8,7 @@
   <link rel="icon" type="image/jpeg" href="./logo.jpg" />
   <link rel="apple-touch-icon" href="./logo.jpg" />
   <link rel="manifest" href="./manifest.json" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <link rel="stylesheet" href="./css/styles.css" />
 </head>
 <body>
@@ -34,11 +35,12 @@
       </div>
 
       <div class="top-controls">
+        <button id="btn-minimal-driving" class="btn btn-primary" title="Toggle Zero-Clutter Minimal In-Car Driving HUD">🚗 MINIMAL DRIVING MODE</button>
         <nav class="nav-tabs" role="tablist">
-          <button id="tab-radar" class="nav-tab active" role="tab">1. RADAR HUD</button>
-          <button id="tab-review" class="nav-tab" role="tab">2. HAZARD LOG &amp; SIZING</button>
-          <button id="tab-planner" class="nav-tab" role="tab">3. TRIP CORRIDOR SCAN</button>
-          <button id="tab-council" class="nav-tab" role="tab">4. COUNCIL / NZTA / OIA</button>
+          <button id="tab-radar" class="nav-tab active" role="tab">1. RADAR &amp; MAP</button>
+          <button id="tab-review" class="nav-tab" role="tab">2. HAZARD LOG &amp; MAP</button>
+          <button id="tab-planner" class="nav-tab" role="tab">3. TRIP ROUTE MAP</button>
+          <button id="tab-council" class="nav-tab" role="tab">4. COUNCIL / NZTA</button>
         </nav>
         <button id="btn-lang-toggle" class="btn" title="Toggle English / Te Reo Māori">🌐 EN / MĀORI</button>
         <div class="hud-clock live-clock-target" aria-label="Digital Clock">20<span class="blink-colon">:</span>00<span class="blink-colon">:</span>00</div>
@@ -52,7 +54,7 @@
            ==================================================================== -->
       <section id="view-radar" class="view-panel active-view" aria-label="Driving Radar Mode">
         <!-- Left Column: Vehicle Telemetry & NZ Left-Hand Lane Vector Engine -->
-        <div class="panel-card">
+        <div class="panel-card radar-side-panel">
           <div class="card-header">
             <span class="card-title">NZ LEFT-LANE TELEMETRY</span>
             <div class="speed-limit-disc" id="hud-speed-limit" title="Corridor Speed Limit">100</div>
@@ -134,11 +136,15 @@
           </div>
         </div>
 
-        <!-- Center Column: Geiger Proximity Bar + Polar Radar Scope + Giant 1-Tap Logger -->
+        <!-- Center Column: Geiger Proximity Bar + Live Map / Polar Radar Scope + Giant 1-Tap Logger -->
         <div class="radar-center-column">
           <div id="geiger-banner" class="geiger-alert-banner">
             <div class="geiger-top-row">
-              <span id="geiger-zone-title" class="geiger-zone-title">RADAR READY — SCANNING NZ CORRIDOR</span>
+              <div class="control-row" style="gap:10px;min-width:0;">
+                <span id="minimal-speed-pill" class="minimal-hud-speed"><span id="min-speed-num">0</span> <small>KM/H</small></span>
+                <span id="minimal-heading-pill" class="minimal-hud-heading">345° NNW • LEFT LANE</span>
+                <span id="geiger-zone-title" class="geiger-zone-title">RADAR READY — SCANNING NZ CORRIDOR</span>
+              </div>
               <span id="geiger-distance-readout" class="geiger-distance-readout">480 m</span>
             </div>
             <div class="geiger-bars">
@@ -161,16 +167,24 @@
             </div>
           </div>
 
-          <!-- Polar Radar Canvas Scope -->
-          <div class="radar-scope-wrapper">
-            <canvas id="radar-canvas"></canvas>
+          <!-- Split / Toggleable Live Road Map + Polar Radar Scope -->
+          <div id="radar-display-split" class="radar-scope-wrapper split-map-radar">
+            <div id="radar-live-map" class="leaflet-hud-map" aria-label="Live NZ Pothole Radar Map"></div>
+            <div id="radar-canvas-pane" class="radar-canvas-pane">
+              <canvas id="radar-canvas"></canvas>
+            </div>
             <div class="scope-overlay-top">
-              <span class="scope-pill">CONE: ±45° NZ KEEP-LEFT</span>
-              <div class="control-row">
-                <button id="btn-boot-sweep" class="btn">⚡ SELF-TEST SWEEP</button>
-                <button id="btn-mute-audio" class="btn">🔊 AUDIO ON</button>
-                <button id="btn-haptic-mode" class="btn">📳 HAPTIC+AUDIO</button>
-                <button id="btn-voice-trigger" class="btn">🎙️ VOICE LOG</button>
+              <div class="control-row" style="pointer-events:auto;">
+                <button id="btn-view-split" class="btn btn-amber">⚡ MAP + RADAR</button>
+                <button id="btn-view-map" class="btn">🗺️ FULL MAP</button>
+                <button id="btn-view-scope" class="btn">📡 FULL RADAR</button>
+              </div>
+              <div class="control-row" style="pointer-events:auto;">
+                <button id="btn-sim-drive-inline" class="btn btn-success">▶ SIM DRIVE</button>
+                <button id="btn-boot-sweep" class="btn">⚡ SWEEP</button>
+                <button id="btn-mute-audio" class="btn">🔊 AUDIO</button>
+                <button id="btn-haptic-mode" class="btn">📳 HAPTIC</button>
+                <button id="btn-voice-trigger" class="btn">🎙️ VOICE</button>
               </div>
             </div>
 
@@ -204,7 +218,7 @@
         </div>
 
         <!-- Right Column: Drive Simulator & Approaching Corridor Feed -->
-        <div class="panel-card">
+        <div class="panel-card radar-side-panel">
           <div class="card-header">
             <span class="card-title">CORRIDOR FEED &amp; DRIVE SIM</span>
             <button id="btn-sim-drive" class="btn btn-success">▶ SIMULATE NZ DRIVE</button>
@@ -271,12 +285,12 @@
       </section>
 
       <!-- ====================================================================
-           VIEW 2: REVIEW, MANUAL INPUT & PHOTO REFERENCE SIZE ESTIMATOR
+           VIEW 2: REVIEW, INTERACTIVE NZ MAP, MANUAL INPUT & PHOTO SIZING
            ==================================================================== -->
       <section id="view-review" class="view-panel" aria-label="Review and Manual Input Mode">
         <div class="panel-card">
           <div class="card-header">
-            <span class="card-title">LOGGED NZ HAZARDS &amp; COUNCIL SLA TRACKER</span>
+            <span class="card-title">INTERACTIVE NZ POTHOLE MAP &amp; COUNCIL SLA TRACKER</span>
             <div class="control-row">
               <select id="review-filter-select" class="input-field" style="width:190px;">
                 <option value="ALL">Filter: All NZ Hazards</option>
@@ -287,6 +301,10 @@
               </select>
             </div>
           </div>
+
+          <!-- Interactive Review Map (Click any pin or click map to set manual coordinates) -->
+          <div id="review-nz-map" class="secondary-leaflet-map" aria-label="New Zealand Hazard Review Map"></div>
+
           <div class="table-scroll">
             <table>
               <thead>
@@ -336,11 +354,11 @@
               <input id="man-heading" type="number" class="input-field" value="340" />
             </div>
             <div>
-              <label class="hud-metric-label">LATITUDE (WGS84)</label>
+              <label class="hud-metric-label">LATITUDE (CLICK MAP OR TYPE)</label>
               <input id="man-lat" type="number" step="0.0001" class="input-field" value="-37.5520" />
             </div>
             <div>
-              <label class="hud-metric-label">LONGITUDE (WGS84)</label>
+              <label class="hud-metric-label">LONGITUDE (CLICK MAP OR TYPE)</label>
               <input id="man-lon" type="number" step="0.0001" class="input-field" value="175.1540" />
             </div>
             <div>
@@ -382,7 +400,7 @@
       </section>
 
       <!-- ====================================================================
-           VIEW 3: TRIP PLANNER CORRIDOR SCANNER & DASHCAM .SRT EXPORTER
+           VIEW 3: TRIP PLANNER CORRIDOR ROUTE MAP & DASHCAM .SRT EXPORTER
            ==================================================================== -->
       <section id="view-planner" class="view-panel" aria-label="Trip Corridor Scanner">
         <div class="panel-card">
@@ -434,8 +452,11 @@
 
         <div class="panel-card">
           <div class="card-header">
-            <span class="card-title">HAZARDS ALONG SELECTED TRIP CORRIDOR</span>
+            <span class="card-title">INTERACTIVE TRIP ROUTE CORRIDOR MAP &amp; HAZARD LIST</span>
           </div>
+
+          <div id="planner-nz-map" class="secondary-leaflet-map" aria-label="New Zealand Trip Corridor Map"></div>
+
           <div class="table-scroll">
             <table>
               <thead>
@@ -523,6 +544,7 @@
     </footer>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="./js/nz-councils.js"></script>
   <script src="./js/db.js"></script>
   <script src="./js/audio-radar.js"></script>
