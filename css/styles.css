@@ -122,6 +122,135 @@ h3,
 }
 
 /* ==========================================================================
+   Logo Splash Screen & Hardware Pothole Scanner Boot-Up Self-Test Overlay
+   ========================================================================== */
+.boot-splash-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  background: radial-gradient(circle at center, #111b29 0%, #05070a 80%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  transition: opacity 0.45s ease, visibility 0.45s ease;
+}
+
+.boot-splash-overlay.hidden-splash {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.boot-splash-card {
+  width: 100%;
+  max-width: 540px;
+  background: rgba(11, 16, 23, 0.96);
+  border: 2px solid var(--accent-red);
+  border-radius: 16px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 0 50px rgba(255, 42, 42, 0.35);
+  text-align: center;
+}
+
+.boot-splash-logo {
+  width: 156px;
+  height: 156px;
+  border-radius: 18px;
+  object-fit: cover;
+  border: 2.5px solid var(--accent-amber);
+  box-shadow: 0 0 28px rgba(255, 176, 0, 0.4);
+}
+
+.splash-logo-switcher {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.boot-splash-title {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+}
+
+.boot-splash-sub {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--accent-amber);
+  letter-spacing: 0.8px;
+}
+
+.splash-channel-labels {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.splash-led-bar {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 5px;
+  height: 32px;
+}
+
+.splash-led-seg {
+  height: 32px;
+  border-radius: 5px;
+  background: #131d2a;
+  border: 1px solid #24364d;
+  transition: all 0.1s ease;
+}
+
+.splash-led-seg.lit-sweep {
+  background: var(--accent-amber);
+  border-color: #ffe066;
+  box-shadow: 0 0 14px var(--accent-amber-glow);
+}
+
+.splash-led-seg.lit-danger {
+  background: var(--accent-red);
+  border-color: #ff8080;
+  box-shadow: 0 0 16px var(--accent-red-glow);
+}
+
+.splash-led-seg.lit-ok {
+  background: var(--accent-green);
+  border-color: #80ffc8;
+  box-shadow: 0 0 14px var(--accent-green-glow);
+}
+
+.splash-status-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent-cyan);
+  letter-spacing: 0.6px;
+}
+
+.splash-boot-btn {
+  width: 100%;
+  min-height: 68px;
+}
+
+/* ==========================================================================
    App Shell (1920x1080 Viewport Grid)
    ========================================================================== */
 .app-shell {

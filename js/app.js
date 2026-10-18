@@ -205,29 +205,58 @@ window.RimReaperApp = (function () {
   }
 
   /**
-   * Trigger Radar Boot-Up Self-Test Sequence
+   * Trigger Hardware-Style Pothole Scanner Splash Screen & Self-Test Audio Sequence
    */
-  function runBootSequence() {
-    const bandIds = ['X', 'K', 'Ka', 'LASER', 'POTHOLE', 'SLIP', 'GPS', 'NZTA'];
-    bandIds.forEach((b) => {
-      const node = el(`band-${b}`);
-      if (node) node.classList.add('active-band');
+  function runBootSequence(reopenSplash = false) {
+    const splashEl = el('boot-splash-screen');
+    if (reopenSplash && splashEl) {
+      splashEl.classList.remove('hidden-splash');
+    }
+
+    const channelIds = ['CRATER', 'BUMP', 'RUT', 'SLIP', 'BRIDGE', 'WET', 'GPS', 'NZTA'];
+    channelIds.forEach((ch) => {
+      const topNode = el(`band-${ch}`);
+      const splashSeg = el(`splash-seg-${ch}`);
+      if (topNode) topNode.classList.add('active-band');
+      if (splashSeg) splashSeg.className = 'splash-led-seg lit-sweep';
     });
 
-    window.AudioRadar.playBootSequence((activeBand) => {
-      bandIds.forEach((b) => {
-        const node = el(`band-${b}`);
-        if (!node) return;
-        node.classList.remove('active-band', 'active-danger');
-        if (b === activeBand) {
-          node.classList.add('active-danger');
+    window.AudioRadar.playBootSequence((activeChannel, statusLabel) => {
+      if (el('splash-status-text') && statusLabel) {
+        el('splash-status-text').textContent = statusLabel;
+      }
+
+      channelIds.forEach((ch, idx) => {
+        const topNode = el(`band-${ch}`);
+        const splashSeg = el(`splash-seg-${ch}`);
+        const activeIdx = channelIds.indexOf(activeChannel);
+
+        if (topNode) {
+          topNode.classList.remove('active-band', 'active-danger');
+          if (ch === activeChannel) topNode.classList.add('active-danger');
+        }
+        if (splashSeg) {
+          splashSeg.className = 'splash-led-seg';
+          if (ch === activeChannel) {
+            splashSeg.classList.add('lit-danger');
+          } else if (activeIdx > idx || activeChannel === 'READY') {
+            splashSeg.classList.add('lit-ok');
+          }
         }
       });
-      if (activeBand === 'READY') {
+
+      if (activeChannel === 'READY') {
         const gpsNode = el('band-GPS');
         const nztaNode = el('band-NZTA');
+        const craterNode = el('band-CRATER');
         if (gpsNode) gpsNode.classList.add('active-ok');
         if (nztaNode) nztaNode.classList.add('active-ok');
+        if (craterNode) craterNode.classList.add('active-danger');
+
+        setTimeout(() => {
+          if (splashEl) splashEl.classList.add('hidden-splash');
+          if (radarMap) setTimeout(() => radarMap.invalidateSize(), 120);
+        }, 550);
       }
     });
   }
@@ -339,8 +368,10 @@ window.RimReaperApp = (function () {
     const distReadout = el('geiger-distance-readout');
     const detailLine = el('geiger-detail-line');
 
-    const potholeBand = el('band-POTHOLE');
+    const craterBand = el('band-CRATER');
+    const bumpBand = el('band-BUMP');
     const slipBand = el('band-SLIP');
+    const wetBand = el('band-WET');
 
     if (scan.nearest) {
       const alertInfo = window.AudioRadar.evaluateProximityAlert(
@@ -365,13 +396,15 @@ window.RimReaperApp = (function () {
         detailLine.textContent = `${scan.nearest.roadName} • ${scan.nearest.wheelTrack} • Conf ${scan.nearest.confidenceScore}% (${scan.nearest.confirmations}x)${wetTag}`;
       }
 
-      if (potholeBand) potholeBand.classList.toggle('active-danger', alertInfo.level >= 2);
+      if (craterBand) craterBand.classList.toggle('active-danger', scan.nearest.severity === 'Rim Bender');
+      if (bumpBand) bumpBand.classList.toggle('active-band', scan.nearest.severity === 'Bump');
       if (slipBand) {
         slipBand.classList.toggle(
           'active-danger',
           Boolean(scan.nearest.hazardType && scan.nearest.hazardType.includes('Slip'))
         );
       }
+      if (wetBand) wetBand.classList.toggle('active-danger', Boolean(scan.nearest.wetWeatherRisk));
 
       updateGeigerSegments(alertInfo.level * 2);
 
@@ -381,13 +414,15 @@ window.RimReaperApp = (function () {
       }
     } else {
       if (banner) banner.className = 'geiger-alert-banner';
-      if (zoneTitle) zoneTitle.textContent = 'RADAR SCANNING — NO HAZARDS IN LEFT-HAND LANE CORRIDOR';
+      if (zoneTitle) zoneTitle.textContent = 'POTHOLE SCANNER ACTIVE — CLEAR CORRIDOR AHEAD';
       if (distReadout) distReadout.textContent = 'CLEAR';
       if (detailLine) {
         detailLine.textContent = `Scanning ${t.cardinal}-Bound Left-Hand Lane (±45° cone) • Opposite-lane potholes suppressed`;
       }
-      if (potholeBand) potholeBand.classList.remove('active-danger');
+      if (craterBand) craterBand.classList.remove('active-danger');
+      if (bumpBand) bumpBand.classList.remove('active-band');
       if (slipBand) slipBand.classList.remove('active-danger');
+      if (wetBand) wetBand.classList.remove('active-danger');
       updateGeigerSegments(0);
     }
 
@@ -477,7 +512,8 @@ window.RimReaperApp = (function () {
   }
 
   /**
-   * High-FPS Canvas Polar Radar Scope Renderer
+   * 3D Perspective NZ Keep-Left Highway Lane Pothole Corridor Visualizer
+   * Shows the Left-Hand Lane wheel tracks (Verge, Center, Centerline) and approaching potholes ahead
    */
   function startRadarCanvasLoop() {
     const canvas = el('radar-canvas');
@@ -493,79 +529,113 @@ window.RimReaperApp = (function () {
 
       const w = canvas.width;
       const h = canvas.height;
-      const cx = w / 2;
-      const cy = h * 0.62;
-      const maxR = Math.min(w * 0.44, h * 0.56);
+      const horizonY = h * 0.14;
+      const bottomY = h * 0.94;
+      const cx = w * 0.5;
 
       ctx.clearRect(0, 0, w, h);
 
-      // Range rings (100m, 300m, 500m, 800m)
-      const rings = [
-        { r: maxR * 0.25, label: '100m IMPACT' },
-        { r: maxR * 0.55, label: '300m APPROACH' },
-        { r: maxR * 0.85, label: '500m DETECT' },
-        { r: maxR * 1.05, label: '800m HWY' }
-      ];
+      // Draw 3D Perspective NZ Two-Lane Road Surface
+      const topHalfW = w * 0.12;
+      const botHalfW = w * 0.44;
 
-      ctx.lineWidth = 1;
-      rings.forEach((ring) => {
-        ctx.strokeStyle = 'rgba(0, 212, 255, 0.22)';
-        ctx.beginPath();
-        ctx.arc(cx, cy, ring.r, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(155, 176, 201, 0.65)';
-        ctx.font = '10px monospace';
-        ctx.fillText(ring.label, cx + 6, cy - ring.r + 11);
-      });
-
-      // NZ Left-Hand Lane Corridor Cone (±45° ahead)
-      ctx.fillStyle = 'rgba(0, 245, 140, 0.07)';
+      // Left-Hand Lane (Active NZ Driving Lane - highlighted emerald tint)
+      ctx.fillStyle = 'rgba(0, 245, 140, 0.09)';
       ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, maxR * 1.05, -Math.PI * 0.75, -Math.PI * 0.25);
+      ctx.moveTo(cx - topHalfW, horizonY);
+      ctx.lineTo(cx, horizonY);
+      ctx.lineTo(cx, bottomY);
+      ctx.lineTo(cx - botHalfW, bottomY);
       ctx.closePath();
       ctx.fill();
 
-      // Road Centerline & Left-Lane Guide
-      ctx.strokeStyle = 'rgba(255, 176, 0, 0.45)';
-      ctx.setLineDash([6, 6]);
+      // Right-Hand Opposing Lane (Dimmed / Suppressed)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.025)';
       ctx.beginPath();
-      ctx.moveTo(cx, cy + 40);
-      ctx.lineTo(cx, cy - maxR * 1.05);
+      ctx.moveTo(cx, horizonY);
+      ctx.lineTo(cx + topHalfW, horizonY);
+      ctx.lineTo(cx + botHalfW, bottomY);
+      ctx.lineTo(cx, bottomY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Left Verge & Right Edge Lines
+      ctx.strokeStyle = 'rgba(0, 245, 140, 0.75)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(cx - topHalfW, horizonY);
+      ctx.lineTo(cx - botHalfW, bottomY);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(155, 176, 201, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx + topHalfW, horizonY);
+      ctx.lineTo(cx + botHalfW, bottomY);
+      ctx.stroke();
+
+      // Dashed Yellow NZ Centerline
+      ctx.strokeStyle = '#ffb000';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([14, 12]);
+      ctx.beginPath();
+      ctx.moveTo(cx, horizonY);
+      ctx.lineTo(cx, bottomY);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Rotating Radar Sweep Beam
-      sweepAngle = (sweepAngle + 0.032) % (Math.PI * 2);
-      const grad = ctx.createRadialGradient(cx, cy, 4, cx, cy, maxR);
-      grad.addColorStop(0, 'rgba(0, 245, 140, 0.35)');
-      grad.addColorStop(1, 'rgba(0, 245, 140, 0.0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, maxR * 1.05, sweepAngle, sweepAngle + 0.38);
-      ctx.closePath();
-      ctx.fill();
+      // Distance Marker Lines (100m, 250m, 450m, 700m ahead)
+      const distMarkers = [
+        { d: 100, frac: 0.78, label: '100m BRACE' },
+        { d: 250, frac: 0.56, label: '250m CAUTION' },
+        { d: 450, frac: 0.36, label: '450m APPROACH' },
+        { d: 700, frac: 0.2, label: '700m HORIZON' }
+      ];
 
-      // Plot Hazards Relative to Vehicle Heading
+      distMarkers.forEach((m) => {
+        const y = horizonY + (bottomY - horizonY) * m.frac;
+        const halfW = topHalfW + (botHalfW - topHalfW) * m.frac;
+        ctx.strokeStyle = 'rgba(0, 212, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx - halfW, y);
+        ctx.lineTo(cx + halfW, y);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(155, 176, 201, 0.75)';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText(m.label, cx - halfW + 6, y - 4);
+      });
+
+      // Lane Header Labels
+      ctx.fillStyle = '#00f58c';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText('▲ NZ KEEP-LEFT LANE (ACTIVE)', cx - botHalfW + 10, bottomY - 10);
+      ctx.fillStyle = 'rgba(155, 176, 201, 0.5)';
+      ctx.fillText('▼ OPPOSING LANE (IGNORED)', cx + 14, bottomY - 10);
+
+      // Plot Potholes on the 3D Road Corridor
       const t = window.GeoLaneEngine.getState();
       cachedHazards.forEach((hz) => {
         if (hz.status === 'Fixed') return;
         const distM = window.NZ_DATA.haversineMeters(t.lat, t.lon, hz.lat, hz.lon);
-        if (distM > 900) return;
-
-        const brg = window.GeoLaneEngine.computeBearing(t.lat, t.lon, hz.lat, hz.lon);
-        const relDeg = ((brg - t.heading + 540) % 360) - 180;
-        const relRad = ((relDeg - 90) * Math.PI) / 180;
-        const normR = Math.min(maxR * 1.04, (distM / 800) * maxR);
-
-        const px = cx + normR * Math.cos(relRad);
-        const py = cy + normR * Math.sin(relRad);
+        if (distM > 800) return;
 
         const sameDirection = Math.abs(((t.heading - hz.heading + 540) % 360) - 180) <= 45;
+        const progress = Math.max(0.05, Math.min(0.95, 1 - distM / 800));
+        const y = horizonY + (bottomY - horizonY) * progress;
+        const laneHalfW = topHalfW + (botHalfW - topHalfW) * progress;
+
+        // Position in Left Wheel Track, Center Track, or Right Wheel Track
+        let trackOffset = -0.52;
+        if (hz.wheelTrack && hz.wheelTrack.includes('Left Wheel')) trackOffset = -0.76;
+        else if (hz.wheelTrack && hz.wheelTrack.includes('Right Wheel')) trackOffset = -0.25;
+
+        const px = sameDirection ? cx + laneHalfW * trackOffset : cx + laneHalfW * 0.5;
+        const radius = Math.max(5, 11 * progress);
+
         ctx.fillStyle = !sameDirection
-          ? 'rgba(130, 150, 175, 0.35)'
+          ? 'rgba(130, 150, 175, 0.3)'
           : hz.severity === 'Rim Bender'
           ? '#ff2a2a'
           : hz.severity === 'Bump'
@@ -573,21 +643,18 @@ window.RimReaperApp = (function () {
           : '#00d4ff';
 
         ctx.beginPath();
-        ctx.arc(px, py, sameDirection ? 6.5 : 4, 0, Math.PI * 2);
+        ctx.ellipse(px, y, radius * 1.35, radius * 0.75, 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
 
         if (sameDirection) {
           ctx.fillStyle = '#ffffff';
           ctx.font = 'bold 10px monospace';
-          ctx.fillText(`${hz.id.replace('NZ-POT-', '#')} (${Math.round(distM)}m)`, px + 9, py + 3);
+          ctx.fillText(`${hz.severity.toUpperCase()} (${Math.round(distM)}m)`, px + radius + 6, y + 3);
         }
       });
-
-      // Vehicle Origin Marker (Shifted slightly left of centerline to illustrate NZ Left-Hand Lane)
-      ctx.fillStyle = '#00f58c';
-      ctx.beginPath();
-      ctx.arc(cx - 10, cy, 6, 0, Math.PI * 2);
-      ctx.fill();
 
       requestAnimationFrame(frame);
     }
@@ -1242,17 +1309,34 @@ window.RimReaperApp = (function () {
     // Bind 1-Click Logo Switcher (Cycles Logo 1 -> Logo 2 -> Logo 3 -> Logo 4)
     const LOGOS = ['./logo.jpg', './logo_v2.jpg', './logo_v3.jpg', './logo_v4.jpg'];
     let logoIdx = 0;
+    const setActiveLogo = (src) => {
+      if (el('app-brand-logo')) el('app-brand-logo').src = src;
+      if (el('splash-logo-img')) el('splash-logo-img').src = src;
+      document.querySelectorAll('.splash-logo-btn').forEach((btn) => {
+        btn.className = btn.getAttribute('data-logo') === src ? 'btn splash-logo-btn btn-amber' : 'btn splash-logo-btn';
+      });
+    };
     if (el('app-brand-logo')) {
       el('app-brand-logo').addEventListener('click', () => {
         logoIdx = (logoIdx + 1) % LOGOS.length;
-        el('app-brand-logo').src = LOGOS[logoIdx];
+        setActiveLogo(LOGOS[logoIdx]);
         showToast(`Switched Active Logo: Option #${logoIdx + 1} (${LOGOS[logoIdx]})`);
       });
     }
+    document.querySelectorAll('.splash-logo-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const src = btn.getAttribute('data-logo');
+        if (src) setActiveLogo(src);
+      });
+    });
 
-    // Bind Boot Sweep Button
+    // Bind Splash Screen Power-On Button & Boot Sweep Button
+    if (el('btn-splash-boot')) {
+      el('btn-splash-boot').addEventListener('click', () => runBootSequence(false));
+    }
     if (el('btn-boot-sweep')) {
-      el('btn-boot-sweep').addEventListener('click', runBootSequence);
+      el('btn-boot-sweep').addEventListener('click', () => runBootSequence(true));
     }
 
     // Bind Drive Simulator Buttons
@@ -1559,8 +1643,11 @@ window.RimReaperApp = (function () {
       }
     );
 
+    if (el('splash-logo-img')) {
+      el('splash-logo-img').addEventListener('click', () => runBootSequence(false));
+    }
+
     refreshTelemetryAndHUD();
-    setTimeout(runBootSequence, 350);
   }
 
   return {

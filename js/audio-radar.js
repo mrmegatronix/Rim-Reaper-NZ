@@ -54,39 +54,43 @@ window.AudioRadar = (function () {
   }
 
   /**
-   * Classic Valentine-One / Escort Radar Detector Self-Test Boot Sequence
-   * Fires visual band sweep callbacks for X, K, Ka, LASER, POTHOLE, SLIP, GPS, NZTA
+   * Hardware-Style Pothole Scanner Power-On Self-Test Boot Sequence
+   * Sweeps Pothole Hazard Channels: CRATER, BUMP, RUT, SLIP, BRIDGE, WET, GPS, NZTA
    */
   function playBootSequence(onBandActive) {
     ensureContext();
     const steps = [
-      { band: 'PWR', delayMs: 0, freq: 880, dur: 120, type: 'square' },
-      { band: 'X', delayMs: 140, freq: 1050, dur: 150, type: 'sawtooth' },
-      { band: 'K', delayMs: 320, freq: 1480, dur: 150, type: 'sawtooth' },
-      { band: 'Ka', delayMs: 500, freq: 2200, dur: 160, type: 'sawtooth' },
-      { band: 'LASER', delayMs: 690, freq: 3100, dur: 90, type: 'square' },
-      { band: 'POTHOLE', delayMs: 820, freq: 3100, dur: 90, type: 'square' },
-      { band: 'SLIP', delayMs: 950, freq: 1760, dur: 140, type: 'triangle' },
-      { band: 'NZTA', delayMs: 1120, freq: 2640, dur: 220, type: 'sine' }
+      { band: 'CRATER', label: 'CHECKING RIM-BENDER CRATER SENSOR...', delayMs: 0, freq: 880, dur: 140, type: 'sawtooth' },
+      { band: 'BUMP', label: 'CALIBRATING Z-AXIS SUSPENSION G-FORCE...', delayMs: 170, freq: 1180, dur: 140, type: 'sawtooth' },
+      { band: 'RUT', label: 'LOADING WHEEL-TRACK RUT FILTER...', delayMs: 340, freq: 1480, dur: 140, type: 'sawtooth' },
+      { band: 'SLIP', label: 'SCANNING WASHOUT & SLIP CORRIDORS...', delayMs: 510, freq: 1860, dur: 150, type: 'square' },
+      { band: 'BRIDGE', label: 'VERIFYING ONE-LANE & BRIDGE DECK DB...', delayMs: 690, freq: 2350, dur: 130, type: 'square' },
+      { band: 'WET', label: 'ARMING WATER-FILLED CRATER ALERTS...', delayMs: 850, freq: 2950, dur: 120, type: 'square' },
+      { band: 'GPS', label: 'LOCKING NZ KEEP-LEFT LANE VECTOR (±45°)...', delayMs: 1010, freq: 1980, dur: 150, type: 'triangle' },
+      { band: 'NZTA', label: '67 NZ COUNCILS + WAKA KOTAHI RAMM READY...', delayMs: 1190, freq: 2640, dur: 240, type: 'sine' }
     ];
 
     steps.forEach((step) => {
       setTimeout(() => {
-        playTone(step.freq, step.dur, step.type, 0.24, 0);
+        playTone(step.freq, step.dur, step.type, 0.25, 0);
         if (typeof onBandActive === 'function') {
-          onBandActive(step.band);
+          onBandActive(step.band, step.label);
         }
       }, step.delayMs);
     });
 
     setTimeout(() => {
-      if (typeof onBandActive === 'function') onBandActive('READY');
+      playTone(3120, 90, 'sine', 0.22, 0);
+      playTone(3520, 160, 'sine', 0.24, 0.11);
+      if (typeof onBandActive === 'function') {
+        onBandActive('READY', 'POTHOLE SCANNER ONLINE — NZ LEFT-HAND LANE ARMED');
+      }
       speakAnnouncement(
         language === 'mi'
-          ? 'Kua rite te pūnaha. Kei te matawai i ngā rori o Aotearoa.'
-          : 'System Ready. GPS Active. Scanning New Zealand Roads.'
+          ? 'Kua rite te pūnaha Rim Reaper. Kei te matawai i ngā kōhao rori o Aotearoa.'
+          : 'Rim Reaper New Zealand Online. Left-Hand Lane Pothole Scanner Active.'
       );
-    }, 1400);
+    }, 1520);
   }
 
   function speakAnnouncement(text) {
