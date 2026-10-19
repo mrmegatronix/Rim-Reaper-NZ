@@ -18,16 +18,20 @@ window.GeoLaneEngine = (function () {
 
   // Default telemetry state (starts near SH1 Dome Valley so approaching hazards can be tested immediately)
   const state = {
-    lat: -36.3695,
-    lon: 174.6195,
+    lat: -36.8485,
+    lon: 174.7633,
     speedKmh: 0,
     heading: 345,
     cardinal: 'NNW',
-    altitudeM: 142,
+    altitudeM: 42,
     accuracyM: 4.1,
     gForceZ: 1.0,
     wheelTrack: 'Left Wheel Track (Verge Side)',
-    roadName: 'SH1 Dome Valley (Northbound)',
+    roadName: 'Locating Device Road Corridor...',
+    placeLabel: 'Locating Device...',
+    locationSource: 'Init',
+    hasRealGps: false,
+    hasIpGps: false,
     speedLimitKmh: 100,
     isMoving: false,
     isSimulating: false
@@ -285,6 +289,91 @@ window.GeoLaneEngine = (function () {
     attachMotionAndCompassListeners();
   }
 
+  let lastReverseGeoLat = 0;
+  let lastReverseGeoLon = 0;
+
+  async function reverseGeocodeLocation(lat, lon) {
+    if (window.NZ_DATA.haversineMeters(lastReverseGeoLat, lastReverseGeoLon, lat, lon) < 35 && state.placeLabel !== 'Locating Device...') {
+      return;
+    }
+    lastReverseGeoLat = lat;
+    lastReverseGeoLon = lon;
+
+    try {
+      const resp = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
+        { headers: { Accept: 'application/json' } }
+      );
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data && data.address) {
+        const a = data.address;
+        const road = a.road || a.pedestrian || a.highway || a.residential || a.suburb || '';
+        const suburb = a.suburb || a.neighbourhood || a.village || a.town || '';
+        const city = a.city || a.town || a.county || a.state_district || a.state || 'New Zealand';
+        const parts = [road, suburb, city].filter((p, idx, arr) => p && arr.indexOf(p) === idx);
+        if (parts.length > 0) {
+          state.placeLabel = parts.join(', ');
+          state.roadName = road ? `${road} (${city})` : parts.join(', ');
+          if (typeof telemetryCallback === 'function') telemetryCallback(state);
+        }
+      }
+    } catch (e) {}
+  }
+
+  async function fetchIpLocationFallback() {
+    if (state.hasRealGps || state.isSimulating) return state;
+
+    const providers = [
+      async () => {
+        const r = await fetch('https://ipwho.is/');
+        const j = await r.json();
+        if (j && j.success !== false && typeof j.latitude === 'number') {
+          return { lat: j.latitude, lon: j.longitude, city: j.city, region: j.region };
+        }
+        return null;
+      },
+      async () => {
+        const r = await fetch('https://get.geojs.io/v1/ip/geo.json');
+        const j = await r.json();
+        if (j && j.latitude && j.longitude) {
+          return { lat: parseFloat(j.latitude), lon: parseFloat(j.longitude), city: j.city, region: j.region };
+        }
+        return null;
+      },
+      async () => {
+        const r = await fetch('https://ipapi.co/json/');
+        const j = await r.json();
+        if (j && typeof j.latitude === 'number') {
+          return { lat: j.latitude, lon: j.longitude, city: j.city, region: j.region };
+        }
+        return null;
+      }
+    ];
+
+    for (const fn of providers) {
+      try {
+        const loc = await fn();
+        if (loc && !isNaN(loc.lat) && !isNaN(loc.lon)) {
+          if (state.hasRealGps) return state;
+          state.lat = Number(loc.lat.toFixed(6));
+          state.lon = Number(loc.lon.toFixed(6));
+          state.hasIpGps = true;
+          state.locationSource = 'Network';
+          state.accuracyM = 25.0;
+          const juris = window.NZ_DATA.resolveJurisdiction(state.lat, state.lon);
+          const cityStr = [loc.city, loc.region].filter(Boolean).join(', ');
+          state.placeLabel = cityStr || juris.council.name;
+          state.roadName = cityStr ? `${cityStr} (${juris.council.name})` : `${juris.council.name} Road Corridor`;
+          if (typeof telemetryCallback === 'function') telemetryCallback(state);
+          reverseGeocodeLocation(state.lat, state.lon);
+          return state;
+        }
+      } catch (e) {}
+    }
+    return null;
+  }
+
   function applyGpsPosition(pos) {
     const prevLat = state.lat;
     const prevLon = state.lon;
@@ -293,6 +382,7 @@ window.GeoLaneEngine = (function () {
     state.accuracyM = Number((pos.coords.accuracy || 4.5).toFixed(1));
     state.altitudeM = pos.coords.altitude ? Math.round(pos.coords.altitude) : state.altitudeM;
     state.hasRealGps = true;
+    state.locationSource = 'GPS';
 
     const gpsSpeedKmh = pos.coords.speed !== null && !isNaN(pos.coords.speed) ? pos.coords.speed * 3.6 : 0;
     state.speedKmh = Math.round(gpsSpeedKmh);
@@ -306,10 +396,14 @@ window.GeoLaneEngine = (function () {
     state.cardinal = headingToCardinal(state.heading);
 
     const juris = window.NZ_DATA.resolveJurisdiction(state.lat, state.lon);
-    state.roadName = juris.isStateHighway
-      ? `${juris.highwayCode} (${juris.council.name})`
-      : `${juris.council.name} Road Corridor`;
+    if (!state.placeLabel || state.placeLabel === 'Locating Device...') {
+      state.roadName = juris.isStateHighway
+        ? `${juris.highwayCode} (${juris.council.name})`
+        : `${juris.council.name} Road Corridor`;
+      state.placeLabel = state.roadName;
+    }
 
+    reverseGeocodeLocation(state.lat, state.lon);
     if (typeof telemetryCallback === 'function') telemetryCallback(state);
   }
 
@@ -324,6 +418,9 @@ window.GeoLaneEngine = (function () {
       }
     });
 
+    // Immediately locate device on startup (Hardware GPS with automatic Network/IP fallback)
+    locateMeNow();
+
     if ('geolocation' in navigator) {
       try {
         if (watchId !== null) navigator.geolocation.clearWatch(watchId);
@@ -333,45 +430,69 @@ window.GeoLaneEngine = (function () {
             applyGpsPosition(pos);
           },
           () => {},
-          { enableHighAccuracy: true, maximumAge: 1000, timeout: 7000 }
+          { enableHighAccuracy: true, maximumAge: 2000, timeout: 8000 }
         );
       } catch (e) {}
     }
   }
 
   /**
-   * 1-Tap Real Phone GPS Lock ("📍 MY GPS")
+   * Auto-Locate & 1-Tap Real Device Location Lock ("📍 MY GPS")
+   * 1. Attempts High-Accuracy Hardware GPS
+   * 2. Falls back to Fast Wi-Fi/Cell Geolocation if indoor satellite fix times out
+   * 3. Falls back to Multi-Provider Network/IP Geolocation if on plain HTTP LAN or permission blocked
    */
   function locateMeNow(callback) {
     requestMobileHardwarePermissions();
-    if (!('geolocation' in navigator)) {
-      if (callback) callback({ ok: false, httpsRequired: false, message: 'Geolocation not supported on this device' });
+
+    const onSuccess = (pos) => {
+      if (simTimer) {
+        clearInterval(simTimer);
+        simTimer = null;
+        state.isSimulating = false;
+      }
+      applyGpsPosition(pos);
+      if (callback) callback({ ok: true, isIpFallback: false, state });
+    };
+
+    const runNetworkFallback = async (errMsg) => {
+      const ipState = await fetchIpLocationFallback();
+      if (ipState) {
+        if (callback) {
+          callback({
+            ok: true,
+            isIpFallback: true,
+            httpsRequired: !window.isSecureContext,
+            state
+          });
+        }
+      } else if (callback) {
+        callback({
+          ok: false,
+          httpsRequired: !window.isSecureContext,
+          message: errMsg || 'Unable to determine device location'
+        });
+      }
+    };
+
+    if (!('geolocation' in navigator) || !window.isSecureContext) {
+      runNetworkFallback('Using Network Location (Switch to HTTPS for Satellite GPS)');
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        if (simTimer) {
-          clearInterval(simTimer);
-          simTimer = null;
-          state.isSimulating = false;
-        }
-        applyGpsPosition(pos);
-        if (callback) callback({ ok: true, state });
+      onSuccess,
+      () => {
+        // Retry with low-accuracy / Wi-Fi / cached fix for instant indoor lock
+        navigator.geolocation.getCurrentPosition(
+          onSuccess,
+          (err2) => {
+            runNetworkFallback(err2 ? err2.message : 'GPS signal unavailable');
+          },
+          { enableHighAccuracy: false, maximumAge: 120000, timeout: 4000 }
+        );
       },
-      (err) => {
-        const httpsBlocked = !window.isSecureContext || err.code === 1;
-        if (callback) {
-          callback({
-            ok: false,
-            httpsRequired: !window.isSecureContext,
-            message: !window.isSecureContext
-              ? 'Mobile browsers require HTTPS for live phone GPS. Tap HTTPS link or use SIM DRIVE.'
-              : `GPS Permission / Signal: ${err.message || 'Unavailable'}`
-          });
-        }
-      },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
+      { enableHighAccuracy: true, maximumAge: 15000, timeout: 4000 }
     );
   }
 

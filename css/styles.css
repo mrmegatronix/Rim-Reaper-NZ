@@ -745,6 +745,37 @@ h3,
   color: var(--accent-green);
 }
 
+.map-location-overlay {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 600;
+  background: rgba(6, 12, 20, 0.92);
+  border: 1px solid var(--accent-green);
+  border-radius: 6px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent-green);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+}
+
+.loc-pulse-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+  flex-shrink: 0;
+  animation: colonBlink 1s infinite;
+}
+
 /* Pass-By STILL THERE / FIXED 4-Second Prompt */
 .passby-banner {
   position: absolute;

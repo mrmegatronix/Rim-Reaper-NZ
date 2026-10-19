@@ -208,17 +208,36 @@ window.RimReaperApp = (function () {
   let cameraCaptureSource = 'hud';
   let deferredInstallPrompt = null;
 
+  function focusDeviceLocationOnMap(openPopup = true) {
+    const t = window.GeoLaneEngine.getState();
+    const splitWrap = el('radar-display-split');
+    if (splitWrap && splitWrap.classList.contains('mode-scope-only')) {
+      splitWrap.className = 'radar-scope-wrapper mode-map-only';
+    }
+    refreshTelemetryAndHUD();
+    if (radarMap) {
+      radarMap.invalidateSize();
+      radarMap.setView([t.lat, t.lon], 16, { animate: true });
+      if (openPopup && radarVehicleMarker) {
+        radarVehicleMarker.openPopup();
+      }
+    }
+    if (reviewMap) {
+      reviewMap.setView([t.lat, t.lon], 14, { animate: false });
+    }
+  }
+
   /**
    * Trigger Hardware-Style Pothole Scanner Splash Screen & Self-Test Audio Sequence
-   * Also requests iOS/Android Accelerometer, Compass, Screen Wake Lock & Live GPS
+   * Also requests iOS/Android Accelerometer, Compass, Screen Wake Lock & Auto-Shows Device Location
    */
   function runBootSequence(reopenSplash = false) {
     window.GeoLaneEngine.requestMobileHardwarePermissions();
     window.GeoLaneEngine.locateMeNow((res) => {
       if (res && res.ok) {
-        refreshTelemetryAndHUD();
-        if (radarMap) radarMap.setView([res.state.lat, res.state.lon], 16);
-      } else if (res && res.httpsRequired && el('btn-https-switch')) {
+        focusDeviceLocationOnMap(true);
+      }
+      if (res && res.httpsRequired && el('btn-https-switch')) {
         el('btn-https-switch').style.display = 'inline-flex';
       }
     });
@@ -270,7 +289,11 @@ window.RimReaperApp = (function () {
 
         setTimeout(() => {
           if (splashEl) splashEl.classList.add('hidden-splash');
-          if (radarMap) setTimeout(() => radarMap.invalidateSize(), 120);
+          setTimeout(() => {
+            focusDeviceLocationOnMap(true);
+            const t = window.GeoLaneEngine.getState();
+            showToast(`📍 DEVICE LOCATION LOCKED: ${t.placeLabel || t.roadName} (${t.lat.toFixed(4)}, ${t.lon.toFixed(4)})`);
+          }, 140);
         }, 550);
       }
     });
@@ -363,10 +386,19 @@ window.RimReaperApp = (function () {
       } else if (t.hasRealGps) {
         el('gps-live-badge').textContent = `📍 LIVE GPS (±${Math.round(t.accuracyM)}m)`;
         el('gps-live-badge').className = 'status-pill stat-fixed';
+      } else if (t.hasIpGps) {
+        el('gps-live-badge').textContent = '📍 NET LOCATED';
+        el('gps-live-badge').className = 'status-pill stat-fixed';
       } else {
-        el('gps-live-badge').textContent = '📍 TAP FOR GPS';
+        el('gps-live-badge').textContent = '📍 LOCATING...';
         el('gps-live-badge').className = 'status-pill sev-ding';
       }
+    }
+
+    if (el('map-loc-text')) {
+      const locTitle = t.placeLabel && t.placeLabel !== 'Locating Device...' ? t.placeLabel : t.roadName;
+      const srcBadge = t.isSimulating ? 'SIM' : t.hasRealGps ? `GPS ±${Math.round(t.accuracyM)}m` : 'DEVICE LOC';
+      el('map-loc-text').textContent = `📍 ${locTitle} • ${t.lat.toFixed(4)}, ${t.lon.toFixed(4)} (${srcBadge})`;
     }
 
     if (!window.isSecureContext && el('btn-https-switch')) {
@@ -907,8 +939,9 @@ window.RimReaperApp = (function () {
   function updateRadarMap() {
     if (!radarMap || typeof window.L === 'undefined') return;
     const t = window.GeoLaneEngine.getState();
+    const juris = window.NZ_DATA.resolveJurisdiction(t.lat, t.lon, t.roadName);
 
-    radarMap.setView([t.lat, t.lon], radarMap.getZoom() || 15, { animate: false });
+    radarMap.setView([t.lat, t.lon], radarMap.getZoom() || 16, { animate: false });
     radarConeLayer.clearLayers();
     radarMarkersLayer.clearLayers();
 
@@ -925,16 +958,27 @@ window.RimReaperApp = (function () {
       { color: '#00f58c', weight: 4, dashArray: '8, 6' }
     ).addTo(radarConeLayer);
 
-    // Vehicle Marker
-    window.L.circleMarker([t.lat, t.lon], {
-      radius: 8,
-      color: '#ffffff',
-      weight: 2,
-      fillColor: '#00f58c',
-      fillOpacity: 1
-    })
-      .bindTooltip(`YOU (${t.speedKmh} km/h • ${t.cardinal} Left Lane)`)
-      .addTo(radarConeLayer);
+    const popupHtml = `<div style="font-family:monospace;font-size:11.5px;line-height:1.35;">
+      <b style="color:#00a85a;">📍 YOUR DEVICE LOCATION</b><br>
+      <b>${t.placeLabel || t.roadName}</b><br>
+      Coords: ${t.lat.toFixed(5)}, ${t.lon.toFixed(5)}<br>
+      Authority: ${juris.council.name}
+    </div>`;
+
+    if (!radarVehicleMarker) {
+      radarVehicleMarker = window.L.circleMarker([t.lat, t.lon], {
+        radius: 10,
+        color: '#ffffff',
+        weight: 3,
+        fillColor: '#00f58c',
+        fillOpacity: 1
+      })
+        .addTo(radarMap)
+        .bindPopup(popupHtml, { autoPan: false, closeButton: false });
+    } else {
+      radarVehicleMarker.setLatLng([t.lat, t.lon]);
+      radarVehicleMarker.setPopupContent(popupHtml);
+    }
 
     // Plot All Hazards
     cachedHazards.forEach((h) => {
@@ -1561,23 +1605,24 @@ window.RimReaperApp = (function () {
 
     // Bind 1-Tap Real Phone GPS Lock ("📍 MY GPS")
     const triggerLocateMe = () => {
-      showToast('Locking onto Real Phone GPS & Motion Sensors...');
+      showToast('Locking onto Real Device Location & Motion Sensors...');
       window.GeoLaneEngine.locateMeNow((res) => {
         if (res && res.ok) {
-          refreshTelemetryAndHUD();
-          if (radarMap) radarMap.setView([res.state.lat, res.state.lon], 16);
-          if (reviewMap) reviewMap.setView([res.state.lat, res.state.lon], 14);
-          showToast(`📍 GPS LOCKED: ${res.state.lat.toFixed(5)}, ${res.state.lon.toFixed(5)} (${res.state.roadName})`);
+          focusDeviceLocationOnMap(true);
+          showToast(
+            `📍 DEVICE LOCATED: ${res.state.placeLabel || res.state.roadName} (${res.state.lat.toFixed(5)}, ${res.state.lon.toFixed(5)})`
+          );
         } else {
           if (res && res.httpsRequired && el('btn-https-switch')) {
             el('btn-https-switch').style.display = 'inline-flex';
           }
-          showToast(res ? res.message : 'GPS Lock Failed');
+          showToast(res ? res.message : 'Location Lock Failed');
         }
       });
     };
     if (el('btn-locate-me')) el('btn-locate-me').addEventListener('click', triggerLocateMe);
     if (el('gps-live-badge')) el('gps-live-badge').addEventListener('click', triggerLocateMe);
+    if (el('map-device-location-bar')) el('map-device-location-bar').addEventListener('click', triggerLocateMe);
 
     // Bind Rear Smartphone Camera Pothole Photo Capture
     const compressCameraImage = (file) =>
