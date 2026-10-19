@@ -204,10 +204,25 @@ window.RimReaperApp = (function () {
     });
   }
 
+  let pendingPhotoDataUrl = null;
+  let cameraCaptureSource = 'hud';
+  let deferredInstallPrompt = null;
+
   /**
    * Trigger Hardware-Style Pothole Scanner Splash Screen & Self-Test Audio Sequence
+   * Also requests iOS/Android Accelerometer, Compass, Screen Wake Lock & Live GPS
    */
   function runBootSequence(reopenSplash = false) {
+    window.GeoLaneEngine.requestMobileHardwarePermissions();
+    window.GeoLaneEngine.locateMeNow((res) => {
+      if (res && res.ok) {
+        refreshTelemetryAndHUD();
+        if (radarMap) radarMap.setView([res.state.lat, res.state.lon], 16);
+      } else if (res && res.httpsRequired && el('btn-https-switch')) {
+        el('btn-https-switch').style.display = 'inline-flex';
+      }
+    });
+
     const splashEl = el('boot-splash-screen');
     if (reopenSplash && splashEl) {
       splashEl.classList.remove('hidden-splash');
@@ -264,7 +279,12 @@ window.RimReaperApp = (function () {
   /**
    * Instant 1-Tap Pothole / Hazard Logger with Reaction-Time Lookback & NZ Left-Lane Vector
    */
-  async function handleQuickLog(severity = 'Rim Bender', sourceLabel = '1-Tap HUD', hazardTypeOverride = null) {
+  async function handleQuickLog(
+    severity = 'Rim Bender',
+    sourceLabel = '1-Tap HUD',
+    hazardTypeOverride = null,
+    photoDataUrlOverride = null
+  ) {
     const t = window.GeoLaneEngine.getState();
     const backtracked = window.GeoLaneEngine.computeBacktrackedLeftLanePosition(
       t.lat,
@@ -293,6 +313,7 @@ window.RimReaperApp = (function () {
       depthCm: severity === 'Rim Bender' ? 14 : severity === 'Bump' ? 9 : 5,
       gForce: severity === 'Rim Bender' ? Math.max(2.7, t.gForceZ) : Math.max(1.9, t.gForceZ),
       accuracyM: t.accuracyM,
+      photoDataUrl: photoDataUrlOverride || pendingPhotoDataUrl || null,
       notes: `Logged via ${sourceLabel} (Backtracked ${backtracked.backtrackMeters}m to impact point in ${backtracked.laneSide}, ${t.wheelTrack}).`
     });
 
@@ -300,6 +321,9 @@ window.RimReaperApp = (function () {
       showToast(`LOG REJECTED: ${result.reason}`);
       return;
     }
+
+    pendingPhotoDataUrl = null;
+    if (el('review-photo-box')) el('review-photo-box').style.display = 'none';
 
     window.AudioRadar.playLogConfirmationTone(severity);
     window.GeoLaneEngine.markGracePeriod(result.record.id);
@@ -331,6 +355,23 @@ window.RimReaperApp = (function () {
   function refreshTelemetryAndHUD() {
     const t = window.GeoLaneEngine.getState();
     const juris = window.NZ_DATA.resolveJurisdiction(t.lat, t.lon, t.roadName);
+
+    if (el('gps-live-badge')) {
+      if (t.isSimulating) {
+        el('gps-live-badge').textContent = '▶ SIM GPS';
+        el('gps-live-badge').className = 'status-pill sev-bump';
+      } else if (t.hasRealGps) {
+        el('gps-live-badge').textContent = `📍 LIVE GPS (±${Math.round(t.accuracyM)}m)`;
+        el('gps-live-badge').className = 'status-pill stat-fixed';
+      } else {
+        el('gps-live-badge').textContent = '📍 TAP FOR GPS';
+        el('gps-live-badge').className = 'status-pill sev-ding';
+      }
+    }
+
+    if (!window.isSecureContext && el('btn-https-switch')) {
+      el('btn-https-switch').style.display = 'inline-flex';
+    }
 
     if (el('hud-speed-val')) el('hud-speed-val').textContent = `${t.speedKmh}`;
     if (el('min-speed-num')) el('min-speed-num').textContent = `${t.speedKmh}`;
@@ -906,6 +947,10 @@ window.RimReaperApp = (function () {
           ? '#ffb000'
           : '#00d4ff';
 
+      const photoHtml = h.photoDataUrl
+        ? `<br><img src="${h.photoDataUrl}" style="width:140px;height:95px;object-fit:cover;border-radius:6px;margin-top:5px;border:1px solid #00d4ff;" alt="Pothole Photo" />`
+        : '';
+
       window.L.circleMarker([h.lat, h.lon], {
         radius: h.severity === 'Rim Bender' ? 8 : 6,
         color: '#ffffff',
@@ -914,7 +959,7 @@ window.RimReaperApp = (function () {
         fillOpacity: 0.9
       })
         .bindPopup(
-          `<b>${h.id} — ${h.severity}</b><br>${h.roadName}<br>${h.laneSide} (${h.wheelTrack})<br>RAMM: ${h.rammRef}<br>Authority: ${h.authorityName}`
+          `<b>${h.id} — ${h.severity}</b><br>${h.roadName}<br>${h.laneSide} (${h.wheelTrack})<br>RAMM: ${h.rammRef}<br>Authority: ${h.authorityName}${photoHtml}`
         )
         .addTo(radarMarkersLayer);
     });
@@ -933,6 +978,10 @@ window.RimReaperApp = (function () {
           ? '#ffb000'
           : '#00d4ff';
 
+      const photoHtml = h.photoDataUrl
+        ? `<br><img src="${h.photoDataUrl}" style="width:140px;height:95px;object-fit:cover;border-radius:6px;margin-top:5px;border:1px solid #00d4ff;" alt="Pothole Photo" />`
+        : '';
+
       const marker = window.L.circleMarker([h.lat, h.lon], {
         radius: 7,
         color: '#ffffff',
@@ -940,7 +989,7 @@ window.RimReaperApp = (function () {
         fillColor: color,
         fillOpacity: 0.9
       }).bindPopup(
-        `<b>${h.id} (${h.severity})</b><br>${h.roadName}<br>${h.laneSide}<br>Authority: ${h.authorityName}`
+        `<b>${h.id} (${h.severity})</b><br>${h.roadName}<br>${h.laneSide}<br>Authority: ${h.authorityName}${photoHtml}`
       );
 
       marker.on('click', () => {
@@ -1496,14 +1545,119 @@ window.RimReaperApp = (function () {
           depthCm,
           gForce: 2.5,
           accuracyM: 3.5,
+          photoDataUrl: pendingPhotoDataUrl || null,
           manualOverride: true,
           notes
         });
+        pendingPhotoDataUrl = null;
+        if (el('review-photo-box')) el('review-photo-box').style.display = 'none';
         cachedHazards = await window.RimReaperDB.getAllHazards();
         selectedHazardId = res.record.id;
         renderReviewTable();
         refreshTelemetryAndHUD();
         showToast(`Saved Hazard ${res.record.id} (${res.record.authorityName})`);
+      });
+    }
+
+    // Bind 1-Tap Real Phone GPS Lock ("📍 MY GPS")
+    const triggerLocateMe = () => {
+      showToast('Locking onto Real Phone GPS & Motion Sensors...');
+      window.GeoLaneEngine.locateMeNow((res) => {
+        if (res && res.ok) {
+          refreshTelemetryAndHUD();
+          if (radarMap) radarMap.setView([res.state.lat, res.state.lon], 16);
+          if (reviewMap) reviewMap.setView([res.state.lat, res.state.lon], 14);
+          showToast(`📍 GPS LOCKED: ${res.state.lat.toFixed(5)}, ${res.state.lon.toFixed(5)} (${res.state.roadName})`);
+        } else {
+          if (res && res.httpsRequired && el('btn-https-switch')) {
+            el('btn-https-switch').style.display = 'inline-flex';
+          }
+          showToast(res ? res.message : 'GPS Lock Failed');
+        }
+      });
+    };
+    if (el('btn-locate-me')) el('btn-locate-me').addEventListener('click', triggerLocateMe);
+    if (el('gps-live-badge')) el('gps-live-badge').addEventListener('click', triggerLocateMe);
+
+    // Bind Rear Smartphone Camera Pothole Photo Capture
+    const compressCameraImage = (file) =>
+      new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxDim = 640;
+            let w = img.width;
+            let h = img.height;
+            if (w > h && w > maxDim) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else if (h > maxDim) {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const c = canvas.getContext('2d');
+            c.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.78));
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+    if (el('btn-camera-hud')) {
+      el('btn-camera-hud').addEventListener('click', () => {
+        cameraCaptureSource = 'hud';
+        if (el('camera-file-input')) el('camera-file-input').click();
+      });
+    }
+    if (el('btn-camera-review')) {
+      el('btn-camera-review').addEventListener('click', () => {
+        cameraCaptureSource = 'review';
+        if (el('camera-file-input')) el('camera-file-input').click();
+      });
+    }
+    if (el('camera-file-input')) {
+      el('camera-file-input').addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const dataUrl = await compressCameraImage(file);
+        pendingPhotoDataUrl = dataUrl;
+        if (el('review-photo-preview')) el('review-photo-preview').src = dataUrl;
+        if (el('review-photo-box')) el('review-photo-box').style.display = 'flex';
+
+        if (cameraCaptureSource === 'hud') {
+          await handleQuickLog('Rim Bender', 'Rear Camera Photo HUD', 'Pothole', dataUrl);
+        } else if (selectedHazardId) {
+          await window.RimReaperDB.updateHazard(selectedHazardId, { photoDataUrl: dataUrl });
+          cachedHazards = await window.RimReaperDB.getAllHazards();
+          renderReviewTable();
+          refreshTelemetryAndHUD();
+          showToast(`📷 Photo Attached to Hazard ${selectedHazardId}`);
+        }
+        e.target.value = '';
+      });
+    }
+
+    // Bind PWA Home Screen Install Prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      if (el('btn-install-pwa')) el('btn-install-pwa').style.display = 'inline-flex';
+    });
+    if (el('btn-install-pwa')) {
+      el('btn-install-pwa').addEventListener('click', async () => {
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+          await deferredInstallPrompt.userChoice;
+          deferredInstallPrompt = null;
+          el('btn-install-pwa').style.display = 'none';
+        } else {
+          showToast('To install on iOS/Android: Tap Browser Share / Menu -> "Add to Home Screen"');
+        }
       });
     }
 
@@ -1535,6 +1689,27 @@ window.RimReaperApp = (function () {
         renderCouncilPreview(mode);
       });
     });
+
+    // Bind Native Mobile Share Sheet (navigator.share)
+    if (el('btn-native-share')) {
+      el('btn-native-share').addEventListener('click', async () => {
+        const h = getSelectedHazard();
+        const txt = el('council-export-preview') ? el('council-export-preview').textContent : '';
+        if (navigator.share && h) {
+          try {
+            await navigator.share({
+              title: `[RIM-REAPER-NZ] ${h.severity} ${h.hazardType} — ${h.roadName}`,
+              text: txt,
+              url: `https://www.google.com/maps?q=${h.lat},${h.lon}`
+            });
+            showToast('Shared Report via Mobile Share Sheet');
+            return;
+          } catch (e) {}
+        }
+        if (navigator.clipboard) navigator.clipboard.writeText(txt);
+        showToast('Copied Report to Clipboard');
+      });
+    }
 
     if (el('btn-send-mailto')) {
       el('btn-send-mailto').addEventListener('click', async () => {

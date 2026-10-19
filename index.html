@@ -9,9 +9,12 @@
   <link rel="apple-touch-icon" href="./logo.jpg" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <link rel="stylesheet" href="./css/styles.css?v=1.5.0" />
+  <link rel="stylesheet" href="./css/styles.css?v=1.6.0" />
 </head>
 <body>
+  <!-- Hidden Rear Smartphone Camera Input for Instant Pothole Evidence Capture -->
+  <input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display:none;" />
+
   <!-- HARDWARE-STYLE POTHOLE SCANNER LOGO SPLASH SCREEN & AUDIO BOOTUP -->
   <div id="boot-splash-screen" class="boot-splash-overlay" role="dialog" aria-label="Rim-Reaper-NZ Pothole Scanner Startup">
     <div class="boot-splash-card">
@@ -51,7 +54,7 @@
 
       <button id="btn-splash-boot" type="button" class="btn-giant-log splash-boot-btn">
         <span>⚡ POWER ON POTHOLE SCANNER</span>
-        <span class="btn-giant-sub">Cues Hardware Boot-Up Self-Test Audio &amp; Launches NZ Left-Lane Map</span>
+        <span class="btn-giant-sub">Unlocks Phone GPS, G-Force Sensor, Wake Lock &amp; Hardware Self-Test Audio</span>
       </button>
     </div>
   </div>
@@ -62,7 +65,7 @@
       <div class="brand-cluster">
         <img id="app-brand-logo" src="./logo.jpg" alt="Rim-Reaper-NZ Logo" class="brand-logo-img" title="Click to cycle through all 4 Rim-Reaper-NZ Logos" style="cursor:pointer;" />
         <div class="brand-title">RIM-REAPER-NZ</div>
-        <span class="brand-sub">NZ POTHOLE SCANNER</span>
+        <span id="gps-live-badge" class="status-pill stat-fixed" style="cursor:pointer;" title="Tap to Lock Real Phone GPS">📍 GPS READY</span>
       </div>
 
       <!-- Pothole & Road Surface Defect Channel Indicators (Zero Police/Speed Camera Bands) -->
@@ -79,12 +82,14 @@
       </div>
 
       <div class="top-controls">
-        <button id="btn-minimal-driving" class="btn btn-primary" title="Toggle Zero-Clutter Minimal In-Car Driving HUD">🚗 MINIMAL DRIVING MODE</button>
+        <a id="btn-https-switch" href="https://mrmegatronix.github.io/Rim-Reaper-NZ/" class="btn btn-amber" style="display:none;text-decoration:none;" title="Switch to HTTPS for Live Mobile GPS">🔒 HTTPS GPS</a>
+        <button id="btn-install-pwa" class="btn btn-success" style="display:none;" title="Install Rim-Reaper-NZ to Phone Home Screen">📲 INSTALL</button>
+        <button id="btn-minimal-driving" class="btn btn-primary" title="Toggle Zero-Clutter Minimal In-Car Driving HUD">🚗 HUD</button>
         <nav class="nav-tabs" role="tablist">
-          <button id="tab-radar" class="nav-tab active" role="tab">1. POTHOLE MAP</button>
-          <button id="tab-review" class="nav-tab" role="tab">2. HAZARD LOG</button>
-          <button id="tab-planner" class="nav-tab" role="tab">3. TRIP ROUTE</button>
-          <button id="tab-council" class="nav-tab" role="tab">4. COUNCIL / NZTA</button>
+          <button id="tab-radar" class="nav-tab active" role="tab">1. DRIVE</button>
+          <button id="tab-review" class="nav-tab" role="tab">2. LOG &amp; PHOTO</button>
+          <button id="tab-planner" class="nav-tab" role="tab">3. ROUTE</button>
+          <button id="tab-council" class="nav-tab" role="tab">4. REPORT</button>
         </nav>
         <button id="btn-lang-toggle" class="btn" title="Toggle English / Te Reo Māori">🌐 EN / MĀORI</button>
         <div class="hud-clock live-clock-target" aria-label="Digital Clock">20<span class="blink-colon">:</span>00<span class="blink-colon">:</span>00</div>
@@ -214,17 +219,19 @@
           <!-- Dedicated Map / Lane View / Audio Control Strip (Never overlaps map) -->
           <div class="radar-toolbar">
             <div class="control-row radar-toolbar-group">
-              <button id="btn-view-map" class="btn btn-amber">🗺️ ROAD MAP</button>
-              <button id="btn-view-scope" class="btn">🛣️ LANE VIEW</button>
+              <button id="btn-locate-me" class="btn btn-success" title="Lock onto Phone Real GPS Location">📍 MY GPS</button>
+              <button id="btn-view-map" class="btn btn-amber">🗺️ MAP</button>
+              <button id="btn-view-scope" class="btn">🛣️ 3D LANE</button>
               <button id="btn-view-split" class="btn">⚡ SPLIT</button>
             </div>
             <div class="control-row radar-toolbar-group">
+              <button id="btn-camera-hud" class="btn btn-primary" title="Snap Pothole Photo with Rear Camera">📷 PHOTO</button>
               <button id="btn-sim-drive-inline" class="btn btn-success">▶ SIM DRIVE</button>
-              <button id="btn-boot-sweep" class="btn" title="Replay Boot-Up Splash &amp; Self-Test Audio">⚡ BOOT TEST</button>
+              <button id="btn-boot-sweep" class="btn" title="Replay Boot-Up Splash &amp; Self-Test Audio">⚡ BOOT</button>
               <button id="btn-mute-audio" class="btn">🔊 AUDIO</button>
               <button id="btn-haptic-mode" class="btn">📳 HAPTIC</button>
               <button id="btn-voice-trigger" class="btn">🎙️ VOICE</button>
-              <button id="btn-mobile-panels" class="btn mobile-only-btn">⚙️ TELEMETRY</button>
+              <button id="btn-mobile-panels" class="btn mobile-only-btn">⚙️ MORE</button>
             </div>
           </div>
 
@@ -373,7 +380,15 @@
 
         <div class="panel-card">
           <div class="card-header">
-            <span class="card-title">MANUAL HAZARD ENTRY &amp; PHOTO REFERENCE SIZING</span>
+            <span class="card-title">CAMERA EVIDENCE &amp; MANUAL HAZARD ENTRY</span>
+            <button id="btn-camera-review" class="btn btn-primary">📷 SNAP POTHOLE PHOTO</button>
+          </div>
+
+          <div id="review-photo-box" style="display:none;align-items:center;gap:10px;background:#08101a;padding:8px;border-radius:8px;border:1px solid var(--accent-cyan);">
+            <img id="review-photo-preview" src="" alt="Captured Pothole Evidence" style="width:76px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #fff;" />
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--accent-green);">
+              ✅ REAR CAMERA PHOTO ATTACHED TO NEXT / SELECTED HAZARD
+            </div>
           </div>
 
           <!-- Reference Object Photo Scale Calculator -->
@@ -541,11 +556,12 @@
           <pre id="council-export-preview" class="export-preview"></pre>
 
           <div class="control-row">
-            <button id="btn-send-mailto" class="btn btn-primary">🚀 LAUNCH COUNCIL / NZTA EMAIL</button>
-            <button id="btn-copy-preview" class="btn btn-success">📋 COPY DOSSIER</button>
-            <button id="btn-export-csv" class="btn">📊 BULK CSV</button>
+            <button id="btn-native-share" class="btn btn-amber">📲 SHARE REPORT</button>
+            <button id="btn-send-mailto" class="btn btn-primary">🚀 EMAIL COUNCIL</button>
+            <button id="btn-copy-preview" class="btn btn-success">📋 COPY</button>
+            <button id="btn-export-csv" class="btn">📊 CSV</button>
             <button id="btn-export-geojson" class="btn">🗺️ GEOJSON</button>
-            <button id="btn-backup-db" class="btn btn-amber">🔐 ENCRYPTED BACKUP</button>
+            <button id="btn-backup-db" class="btn">🔐 BACKUP</button>
           </div>
         </div>
 
@@ -592,10 +608,10 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="./js/nz-councils.js?v=1.5.0"></script>
-  <script src="./js/db.js?v=1.5.0"></script>
-  <script src="./js/audio-radar.js?v=1.5.0"></script>
-  <script src="./js/geo-lane.js?v=1.5.0"></script>
-  <script src="./js/app.js?v=1.5.0"></script>
+  <script src="./js/nz-councils.js?v=1.6.0"></script>
+  <script src="./js/db.js?v=1.6.0"></script>
+  <script src="./js/audio-radar.js?v=1.6.0"></script>
+  <script src="./js/geo-lane.js?v=1.6.0"></script>
+  <script src="./js/app.js?v=1.6.0"></script>
 </body>
 </html>

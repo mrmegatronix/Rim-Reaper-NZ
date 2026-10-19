@@ -1143,9 +1143,10 @@ kbd {
 @media (max-width: 1200px) {
   html,
   body {
+    width: 100vw;
     height: 100dvh;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
   .mobile-only-btn {
@@ -1155,12 +1156,15 @@ kbd {
   .app-shell {
     display: flex;
     flex-direction: column;
-    height: auto;
-    min-height: 100dvh;
-    max-height: none;
-    overflow-x: hidden;
-    overflow-y: visible;
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.minimal-driving-mode .app-shell {
+    padding-bottom: 0 !important;
   }
 
   /* Compact Single-Row Mobile Top Header */
@@ -1169,17 +1173,21 @@ kbd {
     flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
-    height: 54px;
-    padding: 6px 10px;
-    gap: 8px;
-    position: sticky;
-    top: 0;
+    height: 48px;
+    flex-shrink: 0;
+    padding: 4px 8px;
+    gap: 6px;
     z-index: 1200;
   }
 
   .brand-cluster {
     flex: 0 1 auto;
-    gap: 8px;
+    gap: 6px;
+  }
+
+  .brand-logo-img {
+    width: 32px;
+    height: 32px;
   }
 
   .brand-sub,
@@ -1191,7 +1199,7 @@ kbd {
 
   .top-controls {
     flex: 0 0 auto;
-    gap: 6px;
+    gap: 5px;
   }
 
   /* Native Fixed Bottom Thumb Tab Bar on Mobile */
@@ -1202,7 +1210,7 @@ kbd {
     right: 0;
     width: 100vw;
     height: calc(58px + env(safe-area-inset-bottom, 0px));
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    padding: 5px 8px calc(5px + env(safe-area-inset-bottom, 0px));
     background: rgba(7, 11, 17, 0.98);
     border-top: 2px solid var(--border-bright);
     border-radius: 0;
@@ -1225,13 +1233,29 @@ kbd {
 
   .main-stage {
     flex: 1 1 auto;
-    height: auto;
-    overflow: visible;
-    padding: 8px 10px 14px;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 8px 10px;
   }
 
-  .view-panel.active-view,
-  #view-radar.active-view,
+  /* Mode 1 (Drive) Locks to 100% Single-Screen App Viewport (Zero Page Scroll) */
+  #view-radar.active-view {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100%;
+    min-height: 0;
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  body.mobile-show-panels #view-radar.active-view {
+    height: auto;
+    overflow: visible;
+  }
+
   #view-review.active-view,
   #view-planner.active-view,
   #view-council.active-view {
@@ -1242,7 +1266,7 @@ kbd {
     overflow: visible;
   }
 
-  /* Hide desktop sidebars on mobile Mode 1 unless toggled via ⚙️ TELEMETRY */
+  /* Hide desktop sidebars on mobile Mode 1 unless toggled via ⚙️ MORE */
   #view-radar .radar-side-panel {
     display: none !important;
   }
@@ -1254,62 +1278,73 @@ kbd {
   /* Put Radar Scope, Geiger Bar & Giant 1-Tap Button FIRST on mobile */
   .radar-center-column {
     order: -1;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 6px;
+  }
+
+  .geiger-alert-banner {
+    padding: 7px 10px;
+    gap: 5px;
   }
 
   .radar-toolbar {
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding: 6px 8px;
+    padding: 4px 6px;
   }
 
   .radar-toolbar .control-row {
     flex-wrap: nowrap;
   }
 
-  /* Full-width stacked Map + Radar on mobile split view */
-  .radar-scope-wrapper.split-map-radar {
-    grid-template-columns: 1fr !important;
-    grid-template-rows: 1.15fr 0.85fr !important;
-    height: 410px;
-    min-height: 380px;
-  }
-
+  /* Full-bleed Map / 3D Lane fills remaining flex space between Geiger bar and thumb buttons */
   .radar-scope-wrapper.mode-map-only,
   .radar-scope-wrapper.mode-scope-only {
     grid-template-columns: 1fr !important;
     grid-template-rows: 1fr !important;
-    height: 340px;
-    min-height: 300px;
+    height: 100%;
+    min-height: 170px;
+  }
+
+  .radar-scope-wrapper.split-map-radar {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 1fr 1fr !important;
+    height: 100%;
+    min-height: 220px;
   }
 
   .leaflet-hud-map {
-    min-height: 180px;
+    height: 100%;
+    min-height: 110px;
     border-right: none;
     border-bottom: 1px solid var(--border-bright);
   }
 
   .radar-canvas-pane {
-    min-height: 160px;
+    height: 100%;
+    min-height: 110px;
   }
 
   .one-tap-zone {
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 6px;
   }
 
   .btn-giant-log {
     grid-column: 1 / -1;
-    min-height: 70px;
-    font-size: 16px;
-    padding: 12px;
+    min-height: 58px;
+    font-size: 15px;
+    padding: 8px 10px;
   }
 
   .btn-secondary-log {
-    min-height: 54px;
-    font-size: 12px;
+    min-height: 46px;
+    font-size: 11.5px;
+    padding: 6px 8px;
   }
 
   .panel-card {
@@ -1324,7 +1359,7 @@ kbd {
   }
 
   .table-scroll {
-    max-height: 320px;
+    max-height: 300px;
     overflow-x: auto;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -1342,42 +1377,50 @@ kbd {
 
 @media (max-width: 600px) {
   .brand-title {
-    font-size: 13.5px;
+    font-size: 13px;
   }
 
-  #btn-minimal-driving {
-    padding: 6px 8px;
-    font-size: 10.5px;
+  #gps-live-badge {
+    font-size: 9.5px;
+    padding: 2px 6px;
+  }
+
+  #btn-minimal-driving,
+  #btn-install-pwa,
+  #btn-https-switch {
+    padding: 5px 7px;
+    font-size: 10px;
+    min-height: 32px;
   }
 
   .hud-clock {
-    font-size: 13px;
-    padding: 4px 7px;
+    font-size: 12.5px;
+    padding: 4px 6px;
   }
 
   .geiger-top-row {
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 4px;
   }
 
   .minimal-hud-speed {
-    font-size: 19px;
-    padding: 2px 8px;
+    font-size: 18px;
+    padding: 1px 7px;
   }
 
   .minimal-hud-heading {
-    font-size: 11px;
-    padding: 3px 7px;
+    font-size: 10.5px;
+    padding: 2px 6px;
   }
 
   .geiger-zone-title {
     width: 100%;
-    font-size: 12px;
+    font-size: 11.5px;
     order: 3;
   }
 
   .geiger-distance-readout {
-    font-size: 18px;
+    font-size: 17px;
   }
 
   .passby-banner {
@@ -1386,10 +1429,9 @@ kbd {
     gap: 6px;
   }
 
-  .btn,
-  .input-field,
-  select.input-field {
-    min-height: 38px;
-    font-size: 12px;
+  .radar-toolbar .btn {
+    min-height: 34px;
+    padding: 5px 8px;
+    font-size: 11px;
   }
 }

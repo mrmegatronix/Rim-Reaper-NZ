@@ -198,37 +198,25 @@ window.GeoLaneEngine = (function () {
     };
   }
 
-  function startSensors(onTelemetryChange, onAutoBumpDetected) {
-    if ('geolocation' in navigator) {
+  let wakeLockSentinel = null;
+  let telemetryCallback = null;
+  let autoBumpCallback = null;
+  let motionListenersAttached = false;
+
+  async function acquireWakeLock() {
+    if ('wakeLock' in navigator) {
       try {
-        watchId = navigator.geolocation.watchPosition(
-          (pos) => {
-            if (state.isSimulating) return;
-            const prevLat = state.lat;
-            const prevLon = state.lon;
-            state.lat = pos.coords.latitude;
-            state.lon = pos.coords.longitude;
-            state.accuracyM = pos.coords.accuracy || 5.0;
-            state.altitudeM = pos.coords.altitude ? Math.round(pos.coords.altitude) : state.altitudeM;
-
-            const gpsSpeedKmh = pos.coords.speed !== null && !isNaN(pos.coords.speed) ? pos.coords.speed * 3.6 : 0;
-            state.speedKmh = Math.round(gpsSpeedKmh);
-            state.isMoving = state.speedKmh > 10;
-
-            if (pos.coords.heading !== null && !isNaN(pos.coords.heading) && pos.coords.heading >= 0) {
-              state.heading = Math.round(pos.coords.heading);
-            } else if (window.NZ_DATA.haversineMeters(prevLat, prevLon, state.lat, state.lon) > 3) {
-              state.heading = Math.round(computeBearing(prevLat, prevLon, state.lat, state.lon));
-            }
-            state.cardinal = headingToCardinal(state.heading);
-
-            if (typeof onTelemetryChange === 'function') onTelemetryChange(state);
-          },
-          () => {},
-          { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
-        );
-      } catch (e) {}
+        wakeLockSentinel = await navigator.wakeLock.request('screen');
+        state.wakeLockActive = true;
+      } catch (e) {
+        state.wakeLockActive = false;
+      }
     }
+  }
+
+  function attachMotionAndCompassListeners() {
+    if (motionListenersAttached) return;
+    motionListenersAttached = true;
 
     if (typeof window.DeviceMotionEvent !== 'undefined') {
       window.addEventListener('devicemotion', (event) => {
@@ -237,7 +225,6 @@ window.GeoLaneEngine = (function () {
         const totalG = Math.sqrt((acc.x || 0) ** 2 + (acc.y || 0) ** 2 + (acc.z || 0) ** 2) / 9.81;
         state.gForceZ = Number(totalG.toFixed(2));
 
-        // Lateral impulse determines wheel track
         if (Math.abs(acc.x || 0) > 2.2) {
           state.wheelTrack = (acc.x || 0) < 0 ? 'Left Wheel Track (Verge Side)' : 'Right Wheel Track (Centerline Side)';
         }
@@ -246,12 +233,146 @@ window.GeoLaneEngine = (function () {
         const threshold = holidayPreset ? profile.gThreshold * 0.85 : profile.gThreshold;
 
         if (!gravelSuppression && state.speedKmh >= 15 && totalG >= threshold) {
-          if (typeof onAutoBumpDetected === 'function') {
-            onAutoBumpDetected(state.gForceZ, state.wheelTrack);
+          if (typeof autoBumpCallback === 'function') {
+            autoBumpCallback(state.gForceZ, state.wheelTrack);
           }
         }
       });
     }
+
+    if (typeof window.DeviceOrientationEvent !== 'undefined') {
+      window.addEventListener('deviceorientation', (event) => {
+        if (state.isSimulating) return;
+        let compass = null;
+        if (typeof event.webkitCompassHeading === 'number') {
+          compass = event.webkitCompassHeading;
+        } else if (typeof event.alpha === 'number') {
+          compass = (360 - event.alpha) % 360;
+        }
+        if (compass !== null && !isNaN(compass) && state.speedKmh < 8) {
+          state.heading = Math.round(compass);
+          state.cardinal = headingToCardinal(state.heading);
+          if (typeof telemetryCallback === 'function') telemetryCallback(state);
+        }
+      });
+    }
+  }
+
+  /**
+   * Explicitly request iOS/Android Accelerometer, Gyroscope, Compass & Screen Wake Lock permissions
+   * Must be invoked inside a user tap handler (e.g. Splash Screen Power-On or Locate Me button)
+   */
+  async function requestMobileHardwarePermissions() {
+    await acquireWakeLock();
+    try {
+      if (
+        typeof window.DeviceMotionEvent !== 'undefined' &&
+        typeof window.DeviceMotionEvent.requestPermission === 'function'
+      ) {
+        await window.DeviceMotionEvent.requestPermission();
+      }
+    } catch (e) {}
+
+    try {
+      if (
+        typeof window.DeviceOrientationEvent !== 'undefined' &&
+        typeof window.DeviceOrientationEvent.requestPermission === 'function'
+      ) {
+        await window.DeviceOrientationEvent.requestPermission();
+      }
+    } catch (e) {}
+
+    attachMotionAndCompassListeners();
+  }
+
+  function applyGpsPosition(pos) {
+    const prevLat = state.lat;
+    const prevLon = state.lon;
+    state.lat = Number(pos.coords.latitude.toFixed(6));
+    state.lon = Number(pos.coords.longitude.toFixed(6));
+    state.accuracyM = Number((pos.coords.accuracy || 4.5).toFixed(1));
+    state.altitudeM = pos.coords.altitude ? Math.round(pos.coords.altitude) : state.altitudeM;
+    state.hasRealGps = true;
+
+    const gpsSpeedKmh = pos.coords.speed !== null && !isNaN(pos.coords.speed) ? pos.coords.speed * 3.6 : 0;
+    state.speedKmh = Math.round(gpsSpeedKmh);
+    state.isMoving = state.speedKmh > 10;
+
+    if (pos.coords.heading !== null && !isNaN(pos.coords.heading) && pos.coords.heading >= 0) {
+      state.heading = Math.round(pos.coords.heading);
+    } else if (window.NZ_DATA.haversineMeters(prevLat, prevLon, state.lat, state.lon) > 3) {
+      state.heading = Math.round(computeBearing(prevLat, prevLon, state.lat, state.lon));
+    }
+    state.cardinal = headingToCardinal(state.heading);
+
+    const juris = window.NZ_DATA.resolveJurisdiction(state.lat, state.lon);
+    state.roadName = juris.isStateHighway
+      ? `${juris.highwayCode} (${juris.council.name})`
+      : `${juris.council.name} Road Corridor`;
+
+    if (typeof telemetryCallback === 'function') telemetryCallback(state);
+  }
+
+  function startSensors(onTelemetryChange, onAutoBumpDetected) {
+    telemetryCallback = onTelemetryChange;
+    autoBumpCallback = onAutoBumpDetected;
+    attachMotionAndCompassListeners();
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        acquireWakeLock();
+      }
+    });
+
+    if ('geolocation' in navigator) {
+      try {
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        watchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            if (state.isSimulating) return;
+            applyGpsPosition(pos);
+          },
+          () => {},
+          { enableHighAccuracy: true, maximumAge: 1000, timeout: 7000 }
+        );
+      } catch (e) {}
+    }
+  }
+
+  /**
+   * 1-Tap Real Phone GPS Lock ("📍 MY GPS")
+   */
+  function locateMeNow(callback) {
+    requestMobileHardwarePermissions();
+    if (!('geolocation' in navigator)) {
+      if (callback) callback({ ok: false, httpsRequired: false, message: 'Geolocation not supported on this device' });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (simTimer) {
+          clearInterval(simTimer);
+          simTimer = null;
+          state.isSimulating = false;
+        }
+        applyGpsPosition(pos);
+        if (callback) callback({ ok: true, state });
+      },
+      (err) => {
+        const httpsBlocked = !window.isSecureContext || err.code === 1;
+        if (callback) {
+          callback({
+            ok: false,
+            httpsRequired: !window.isSecureContext,
+            message: !window.isSecureContext
+              ? 'Mobile browsers require HTTPS for live phone GPS. Tap HTTPS link or use SIM DRIVE.'
+              : `GPS Permission / Signal: ${err.message || 'Unavailable'}`
+          });
+        }
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
+    );
   }
 
   /**
@@ -337,6 +458,8 @@ window.GeoLaneEngine = (function () {
     scanApproachingHazards,
     scanTripCorridor,
     startSensors,
+    requestMobileHardwarePermissions,
+    locateMeNow,
     toggleDriveSimulation,
     setManualTelemetry,
     markGracePeriod
