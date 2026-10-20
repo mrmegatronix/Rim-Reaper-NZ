@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="./logo.jpg" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <link rel="stylesheet" href="./css/styles.css?v=2.0.0" />
+  <link rel="stylesheet" href="./css/styles.css?v=2.1.0" />
 </head>
 <body>
   <!-- Hidden Rear Smartphone Camera Input for Instant Pothole Evidence Capture -->
@@ -18,7 +18,7 @@
   <!-- Floating Mobile Toast Notification -->
   <div id="floating-toast" class="floating-toast" role="status" aria-live="polite"></div>
 
-  <!-- HARDWARE-STYLE POTHOLE SCANNER LOGO 1 SPLASH SCREEN & AUDIO BOOTUP -->
+  <!-- AUTOMATIC 15-SECOND POTHOLE SCANNER LOGO 1 SPLASH SCREEN & AUDIO BOOTUP -->
   <div id="boot-splash-screen" class="boot-splash-overlay" role="dialog" aria-label="Rim-Reaper-NZ Pothole Scanner Startup">
     <div class="boot-splash-card">
       <img id="splash-logo-img" src="./logo.jpg" alt="Rim-Reaper-NZ Splash Logo" class="boot-splash-logo" />
@@ -46,11 +46,15 @@
         <div id="splash-seg-NZTA" class="splash-led-seg"></div>
       </div>
 
-      <div id="splash-status-text" class="splash-status-text">STANDBY — TAP TO CUE POTHOLE SCANNER SELF-TEST</div>
+      <div class="splash-progress-track">
+        <div id="splash-progress-fill" class="splash-progress-fill"></div>
+      </div>
+      <div id="splash-countdown-text" class="splash-countdown-text">OPENING 3D SPLIT MAP IN 15s...</div>
+      <div id="splash-status-text" class="splash-status-text">CHECKING RIM-BENDER CRATER SENSOR...</div>
 
       <button id="btn-splash-boot" type="button" class="btn-giant-log splash-boot-btn">
-        <span>⚡ POWER ON POTHOLE SCANNER</span>
-        <span class="btn-giant-sub">Unlocks Phone GPS, G-Force Sensor, Wake Lock &amp; Hardware Self-Test Audio</span>
+        <span>⚡ ENTER 3D SPLIT MAP NOW / UNMUTE AUDIO</span>
+        <span class="btn-giant-sub">Auto-opens into 3D Split Map + Live GPS after 15s self-test</span>
       </button>
     </div>
   </div>
@@ -305,12 +309,12 @@
           </div>
 
           <!-- ZONE 2: Middle Interactive Map / 3D Lane with Single Location Bar + Corner View Toggle -->
-          <div id="radar-display-split" class="radar-scope-wrapper mode-map-only">
+          <div id="radar-display-split" class="radar-scope-wrapper split-map-radar">
             <div id="map-device-location-bar" class="map-location-overlay" title="Tap to re-locate device GPS">
               <span id="map-loc-dot" class="loc-pulse-dot"></span>
               <span id="map-loc-text" class="nowrap">📍 LOCATING DEVICE...</span>
             </div>
-            <button id="btn-cycle-view" class="btn btn-amber map-corner-toggle" title="Cycle Map / 3D Lane / Split View">🗺️ MAP</button>
+            <button id="btn-cycle-view" class="btn btn-amber map-corner-toggle" title="Cycle 3D Split / Map Only / 3D Lane">⚡ 3D SPLIT</button>
 
             <div id="radar-live-map" class="leaflet-hud-map" aria-label="Live NZ Pothole Road Map"></div>
             <div id="radar-canvas-pane" class="radar-canvas-pane">
@@ -658,15 +662,15 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="./js/nz-councils.js?v=2.0.0"></script>
-  <script src="./js/db.js?v=2.0.0"></script>
-  <script src="./js/audio-radar.js?v=2.0.0"></script>
-  <script src="./js/geo-lane.js?v=2.0.0"></script>
-  <script src="./js/ui-core.js?v=2.0.0"></script>
-  <script src="./js/maps.js?v=2.0.0"></script>
-  <script src="./js/drive.js?v=2.0.0"></script>
-  <script src="./js/log.js?v=2.0.0"></script>
-  <script src="./js/report.js?v=2.0.0"></script>
-  <script src="./js/app.js?v=2.0.0"></script>
+  <script src="./js/nz-councils.js?v=2.1.0"></script>
+  <script src="./js/db.js?v=2.1.0"></script>
+  <script src="./js/audio-radar.js?v=2.1.0"></script>
+  <script src="./js/geo-lane.js?v=2.1.0"></script>
+  <script src="./js/ui-core.js?v=2.1.0"></script>
+  <script src="./js/maps.js?v=2.1.0"></script>
+  <script src="./js/drive.js?v=2.1.0"></script>
+  <script src="./js/log.js?v=2.1.0"></script>
+  <script src="./js/report.js?v=2.1.0"></script>
+  <script src="./js/app.js?v=2.1.0"></script>
 </body>
 </html>

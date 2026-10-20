@@ -16,9 +16,9 @@ window.RimReaperMaps = (function () {
   let plannerRouteLayer = null;
 
   const VIEW_MODES = [
+    { cls: 'split-map-radar', label: '⚡ 3D SPLIT' },
     { cls: 'mode-map-only', label: '🗺️ MAP' },
-    { cls: 'mode-scope-only', label: '🛣️ 3D LANE' },
-    { cls: 'split-map-radar', label: '⚡ SPLIT' }
+    { cls: 'mode-scope-only', label: '🛣️ 3D LANE' }
   ];
   let viewModeIdx = 0;
 
@@ -175,13 +175,13 @@ window.RimReaperMaps = (function () {
     });
   }
 
-  function focusDeviceLocationOnMap(openPopup = true) {
+  function focusDeviceLocationOnMap(openPopup = true, forceSplit = false) {
     const t = window.GeoLaneEngine.getState();
     const splitWrap = el('radar-display-split');
-    if (splitWrap && splitWrap.classList.contains('mode-scope-only')) {
+    if (splitWrap && (forceSplit || splitWrap.classList.contains('mode-scope-only'))) {
       viewModeIdx = 0;
-      splitWrap.className = 'radar-scope-wrapper mode-map-only';
-      if (el('btn-cycle-view')) el('btn-cycle-view').textContent = '🗺️ MAP';
+      splitWrap.className = 'radar-scope-wrapper split-map-radar';
+      if (el('btn-cycle-view')) el('btn-cycle-view').textContent = '⚡ 3D SPLIT';
     }
     if (window.RimReaperDrive) {
       window.RimReaperDrive.refreshTelemetryAndHUD();

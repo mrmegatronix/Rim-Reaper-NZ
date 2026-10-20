@@ -5,12 +5,32 @@
 window.RimReaperDrive = (function () {
   const { el, state, showToast, showView, toggleSettingsSheet } = window.RimReaperCore;
 
+  let splashCountdownInterval = null;
+
+  function dismissSplashIntoSplitMap() {
+    if (splashCountdownInterval) {
+      clearInterval(splashCountdownInterval);
+      splashCountdownInterval = null;
+    }
+    if (window.AudioRadar && window.AudioRadar.clearBootTimers) {
+      window.AudioRadar.clearBootTimers();
+    }
+    const splashEl = el('boot-splash-screen');
+    if (splashEl) splashEl.classList.add('hidden-splash');
+
+    setTimeout(() => {
+      if (window.RimReaperMaps) window.RimReaperMaps.focusDeviceLocationOnMap(true, true);
+      const t = window.GeoLaneEngine.getState();
+      showToast(`📍 3D SPLIT MAP ACTIVE: ${t.placeLabel || t.roadName} (${t.lat.toFixed(4)}, ${t.lon.toFixed(4)})`);
+    }, 120);
+  }
+
   function runBootSequence(reopenSplash = false) {
     toggleSettingsSheet(false);
     window.GeoLaneEngine.requestMobileHardwarePermissions();
     window.GeoLaneEngine.locateMeNow((res) => {
       if (res && res.ok && window.RimReaperMaps) {
-        window.RimReaperMaps.focusDeviceLocationOnMap(true);
+        window.RimReaperMaps.focusDeviceLocationOnMap(true, true);
       }
       if (res && res.httpsRequired && el('btn-https-switch')) {
         el('btn-https-switch').style.display = 'inline-flex';
@@ -21,6 +41,31 @@ window.RimReaperDrive = (function () {
     if (reopenSplash && splashEl) {
       splashEl.classList.remove('hidden-splash');
     }
+
+    // 15-Second Automatic Boot Countdown & Progress Bar
+    const totalSec = 15;
+    let remainingSec = totalSec;
+    if (splashCountdownInterval) clearInterval(splashCountdownInterval);
+
+    const updateCountdownUI = () => {
+      if (el('splash-countdown-text')) {
+        el('splash-countdown-text').textContent = `OPENING 3D SPLIT MAP IN ${remainingSec}s...`;
+      }
+      if (el('splash-progress-fill')) {
+        const pct = Math.min(100, Math.round(((totalSec - remainingSec) / totalSec) * 100));
+        el('splash-progress-fill').style.width = `${pct}%`;
+      }
+    };
+    updateCountdownUI();
+
+    splashCountdownInterval = setInterval(() => {
+      remainingSec = Math.max(0, remainingSec - 1);
+      updateCountdownUI();
+      if (remainingSec <= 0) {
+        clearInterval(splashCountdownInterval);
+        splashCountdownInterval = null;
+      }
+    }, 1000);
 
     const channelIds = ['CRATER', 'BUMP', 'RUT', 'SLIP', 'BRIDGE', 'WET', 'GPS', 'NZTA'];
     channelIds.forEach((ch) => {
@@ -48,7 +93,7 @@ window.RimReaperDrive = (function () {
           splashSeg.className = 'splash-led-seg';
           if (ch === activeChannel) {
             splashSeg.classList.add('lit-danger');
-          } else if (activeIdx > idx || activeChannel === 'READY') {
+          } else if (activeIdx > idx || activeChannel === 'READY' || activeChannel === 'COMPLETE') {
             splashSeg.classList.add('lit-ok');
           }
         }
@@ -61,15 +106,11 @@ window.RimReaperDrive = (function () {
         if (gpsNode) gpsNode.classList.add('active-ok');
         if (nztaNode) nztaNode.classList.add('active-ok');
         if (craterNode) craterNode.classList.add('active-danger');
+        if (el('splash-progress-fill')) el('splash-progress-fill').style.width = '100%';
+      }
 
-        setTimeout(() => {
-          if (splashEl) splashEl.classList.add('hidden-splash');
-          setTimeout(() => {
-            if (window.RimReaperMaps) window.RimReaperMaps.focusDeviceLocationOnMap(true);
-            const t = window.GeoLaneEngine.getState();
-            showToast(`📍 DEVICE LOCATION LOCKED: ${t.placeLabel || t.roadName} (${t.lat.toFixed(4)}, ${t.lon.toFixed(4)})`);
-          }, 140);
-        }, 550);
+      if (activeChannel === 'COMPLETE') {
+        dismissSplashIntoSplitMap();
       }
     });
   }
@@ -362,9 +403,11 @@ window.RimReaperDrive = (function () {
 
     function frame() {
       const rect = canvas.parentElement.getBoundingClientRect();
-      if (canvas.width !== Math.floor(rect.width) || canvas.height !== Math.floor(rect.height)) {
-        canvas.width = Math.max(300, Math.floor(rect.width));
-        canvas.height = Math.max(220, Math.floor(rect.height));
+      const targetW = Math.max(180, Math.floor(rect.width));
+      const targetH = Math.max(100, Math.floor(rect.height));
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
       }
 
       const w = canvas.width;
@@ -495,6 +538,7 @@ window.RimReaperDrive = (function () {
 
   return {
     runBootSequence,
+    dismissSplashIntoSplitMap,
     handleQuickLog,
     refreshTelemetryAndHUD,
     handlePassByResponse,

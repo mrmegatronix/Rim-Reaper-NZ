@@ -261,6 +261,30 @@ h3,
   box-shadow: 0 0 14px var(--accent-green-glow);
 }
 
+.splash-progress-track {
+  width: 100%;
+  height: 10px;
+  background: #0d1622;
+  border: 1px solid var(--border-bright);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.splash-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-amber) 0%, var(--accent-green) 100%);
+  transition: width 0.4s ease;
+}
+
+.splash-countdown-text {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--accent-amber);
+  letter-spacing: 1px;
+}
+
 .splash-status-text {
   font-family: var(--font-mono);
   font-size: 11.5px;
@@ -270,7 +294,7 @@ h3,
 
 .splash-boot-btn {
   width: 100%;
-  min-height: 66px;
+  min-height: 62px;
 }
 
 /* ==========================================================================
@@ -685,6 +709,10 @@ h3,
 .radar-scope-wrapper.split-map-radar {
   grid-template-columns: 1fr;
   grid-template-rows: 1fr 1fr;
+}
+
+.radar-scope-wrapper.split-map-radar .leaflet-hud-map {
+  border-bottom: 1.5px solid var(--border-bright);
 }
 
 .leaflet-hud-map {
