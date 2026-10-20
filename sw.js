@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rim-reaper-nz-v1.7.0';
+const CACHE_NAME = 'rim-reaper-nz-v2.0.0';
 const TILE_CACHE_NAME = 'rim-reaper-nz-tiles-v1';
 
 const CORE_ASSETS = [
@@ -13,6 +13,11 @@ const CORE_ASSETS = [
   './js/db.js',
   './js/audio-radar.js',
   './js/geo-lane.js',
+  './js/ui-core.js',
+  './js/maps.js',
+  './js/drive.js',
+  './js/log.js',
+  './js/report.js',
   './js/app.js'
 ];
 
