@@ -60,9 +60,20 @@ window.RimReaperApp = (function () {
     bind('settings-sheet-backdrop', 'click', () => toggleSettingsSheet(false));
 
     // Splash Screen Power-On & Replay Boot
-    bind('btn-splash-boot', 'click', () => window.RimReaperDrive.runBootSequence(false));
-    bind('splash-logo-img', 'click', () => window.RimReaperDrive.runBootSequence(false));
+    bind('btn-splash-boot', 'click', () => window.RimReaperDrive.dismissSplashIntoSplitMap());
+    bind('splash-logo-img', 'click', () => window.RimReaperDrive.dismissSplashIntoSplitMap());
     bind('btn-boot-sweep', 'click', () => window.RimReaperDrive.runBootSequence(true));
+
+    // Transparent tap anywhere on splash unlocks mobile Web Audio & permissions without interrupting 15s countdown
+    const splashScreen = el('boot-splash-screen');
+    if (splashScreen) {
+      splashScreen.addEventListener('pointerdown', () => {
+        if (window.AudioRadar && window.AudioRadar.ensureContext) window.AudioRadar.ensureContext();
+        if (window.GeoLaneEngine && window.GeoLaneEngine.requestMobileHardwarePermissions) {
+          window.GeoLaneEngine.requestMobileHardwarePermissions();
+        }
+      }, { passive: true });
+    }
 
     // Single Map/3D-Lane/Split Cycle Button on Map Corner
     bind('btn-cycle-view', 'click', () => window.RimReaperMaps.cycleRadarViewMode());
@@ -259,6 +270,9 @@ window.RimReaperApp = (function () {
     );
 
     window.RimReaperDrive.refreshTelemetryAndHUD();
+
+    // Automatic 15s Pothole Radar Self-Test & Auto-Open 3D Split Map Mode
+    window.RimReaperDrive.runBootSequence(false);
   }
 
   return {
