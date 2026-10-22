@@ -21,7 +21,7 @@ window.RimReaperDrive = (function () {
     setTimeout(() => {
       if (window.RimReaperMaps) window.RimReaperMaps.focusDeviceLocationOnMap(true, true);
       const t = window.GeoLaneEngine.getState();
-      showToast(`📍 3D SPLIT MAP ACTIVE: ${t.placeLabel || t.roadName} (${t.lat.toFixed(4)}, ${t.lon.toFixed(4)})`);
+      showToast(`🎯 3D STREET MAP OVERLAY ACTIVE: ${t.placeLabel || t.roadName} (${t.lat.toFixed(4)}, ${t.lon.toFixed(4)})`);
     }, 120);
   }
 
@@ -49,7 +49,7 @@ window.RimReaperDrive = (function () {
 
     const updateCountdownUI = () => {
       if (el('splash-countdown-text')) {
-        el('splash-countdown-text').textContent = `OPENING 3D SPLIT MAP IN ${remainingSec}s...`;
+        el('splash-countdown-text').textContent = `OPENING 3D OVERLAY MAP IN ${remainingSec}s...`;
       }
       if (el('splash-progress-fill')) {
         const pct = Math.min(100, Math.round(((totalSec - remainingSec) / totalSec) * 100));

@@ -1,26 +1,64 @@
 {
-  "name": "Rim-Reaper-NZ — NZ Pothole Radar & Council Reporting Network",
-  "short_name": "RimReaperNZ",
-  "description": "100% Offline-Capable New Zealand Pothole Radar Detector, Left-Lane Vector Tracker, Trip Corridor Scanner & 67 Council / Waka Kotahi NZTA Export Suite.",
-  "start_url": "./index.html",
+  "id": "nz.rimreaper.radar",
+  "name": "Rim-Reaper-NZ — Pothole Radar",
+  "short_name": "Rim-Reaper",
+  "description": "Real-time Left-Lane Pothole Radar Detector, 3D Street Map HUD & Council/NZTA Reporting Suite for Aotearoa New Zealand.",
+  "start_url": "./index.html?source=android_pwa",
   "scope": "./",
   "display": "standalone",
-  "orientation": "any",
-  "background_color": "#05070a",
-  "theme_color": "#ff2a2a",
-  "categories": ["navigation", "utilities", "auto"],
+  "display_override": ["window-controls-overlay", "standalone", "fullscreen"],
+  "orientation": "portrait-primary",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "categories": ["navigation", "travel", "utilities"],
   "icons": [
     {
       "src": "./logo.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%2305070a'/%3E%3Ccircle cx='96' cy='96' r='74' fill='none' stroke='%23ff2a2a' stroke-width='6' stroke-dasharray='18 8'/%3E%3Ccircle cx='96' cy='96' r='46' fill='none' stroke='%23ffb000' stroke-width='4'/%3E%3Cpath d='M96 22 L96 96 L154 58' stroke='%2300ff88' stroke-width='6' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='122' cy='68' r='10' fill='%23ff2a2a'/%3E%3Ctext x='96' y='172' text-anchor='middle' fill='%23ffffff' font-family='monospace' font-weight='bold' font-size='18'%3ERIM-REAPER NZ%3C/text%3E%3C/svg%3E",
+      "src": "./logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%2309090b'/%3E%3Ccircle cx='96' cy='96' r='74' fill='none' stroke='%23ef4444' stroke-width='6' stroke-dasharray='18 8'/%3E%3Ccircle cx='96' cy='96' r='46' fill='none' stroke='%23f59e0b' stroke-width='4'/%3E%3Cpath d='M96 22 L96 96 L154 58' stroke='%2310b981' stroke-width='6' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='122' cy='68' r='10' fill='%23ef4444'/%3E%3Ctext x='96' y='172' text-anchor='middle' fill='%23fafafa' font-family='sans-serif' font-weight='bold' font-size='18'%3ERIM-REAPER%3C/text%3E%3C/svg%3E",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Log Pothole (HUD)",
+      "short_name": "Log Pothole",
+      "description": "Immediately trigger 1-tap left-lane pothole log",
+      "url": "./index.html?action=quicklog",
+      "icons": [{ "src": "./logo.jpg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Passenger Remote",
+      "short_name": "Remote",
+      "description": "Open passenger co-pilot remote",
+      "url": "./remote.html",
+      "icons": [{ "src": "./logo.jpg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Trip Route Corridor",
+      "short_name": "Route",
+      "description": "Inspect trip route and hazard corridor",
+      "url": "./index.html?view=2",
+      "icons": [{ "src": "./logo.jpg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Council & NZTA Reports",
+      "short_name": "Reports",
+      "description": "Generate claim and council export emails",
+      "url": "./index.html?view=3",
+      "icons": [{ "src": "./logo.jpg", "sizes": "96x96" }]
     }
   ]
 }

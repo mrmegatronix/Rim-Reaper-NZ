@@ -16,8 +16,9 @@ window.RimReaperMaps = (function () {
   let plannerRouteLayer = null;
 
   const VIEW_MODES = [
+    { cls: 'mode-3d-overlay', label: '🎯 3D OVERLAY' },
     { cls: 'split-map-radar', label: '⚡ 3D SPLIT' },
-    { cls: 'mode-map-only', label: '🗺️ MAP' },
+    { cls: 'mode-map-only', label: '🗺️ MAP ONLY' },
     { cls: 'mode-scope-only', label: '🛣️ 3D LANE' }
   ];
   let viewModeIdx = 0;
@@ -175,13 +176,13 @@ window.RimReaperMaps = (function () {
     });
   }
 
-  function focusDeviceLocationOnMap(openPopup = true, forceSplit = false) {
+  function focusDeviceLocationOnMap(openPopup = true, forceOverlay = false) {
     const t = window.GeoLaneEngine.getState();
     const splitWrap = el('radar-display-split');
-    if (splitWrap && (forceSplit || splitWrap.classList.contains('mode-scope-only'))) {
+    if (splitWrap && (forceOverlay || splitWrap.classList.contains('mode-scope-only'))) {
       viewModeIdx = 0;
-      splitWrap.className = 'radar-scope-wrapper split-map-radar';
-      if (el('btn-cycle-view')) el('btn-cycle-view').textContent = '⚡ 3D SPLIT';
+      splitWrap.className = 'radar-scope-wrapper mode-3d-overlay';
+      if (el('btn-cycle-view')) el('btn-cycle-view').textContent = '🎯 3D OVERLAY';
     }
     if (window.RimReaperDrive) {
       window.RimReaperDrive.refreshTelemetryAndHUD();

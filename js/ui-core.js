@@ -146,6 +146,9 @@ window.RimReaperCore = (function () {
     if (viewName === 'council' && window.RimReaperReport) {
       window.RimReaperReport.renderCouncilPreview('email');
       window.RimReaperReport.renderLeagueTable();
+      if (window.RimReaperReport.renderShareQr) {
+        window.RimReaperReport.renderShareQr('pwa', false);
+      }
     }
   }
 

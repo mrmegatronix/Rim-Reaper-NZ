@@ -251,8 +251,43 @@ window.RimReaperApp = (function () {
     bind('btn-send-mailto', 'click', window.RimReaperReport.sendMailtoCouncil);
     bind('btn-export-csv', 'click', window.RimReaperReport.exportCsv);
     bind('btn-export-geojson', 'click', window.RimReaperReport.exportGeoJson);
-    bind('btn-export-srt-report', 'click', window.RimReaperLog.downloadDashcamSRT);
     bind('btn-backup-db', 'click', window.RimReaperReport.exportBackupDb);
+
+    // QR Code Share Suite & Modal Controls
+    bind('btn-open-share', 'click', () => window.RimReaperReport.openShareModal('pwa'));
+    bind('btn-close-qr-modal', 'click', () => window.RimReaperReport.closeShareModal());
+    bind('qr-modal-backdrop', 'click', () => window.RimReaperReport.closeShareModal());
+
+    document.querySelectorAll('.btn-qr-target').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-qr-target').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const target = btn.getAttribute('data-target') || 'pwa';
+        window.RimReaperReport.renderShareQr(target, false);
+      });
+    });
+
+    document.querySelectorAll('.btn-modal-qr').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-modal-qr').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const target = btn.getAttribute('data-target') || 'pwa';
+        window.RimReaperReport.renderShareQr(target, true);
+      });
+    });
+
+    bind('btn-copy-qr-link', 'click', () => {
+      window.RimReaperReport.copyShareLink(window.RimReaperReport.getActiveTargets().report);
+    });
+    bind('btn-native-share-app', 'click', () => {
+      window.RimReaperReport.shareAppLink(window.RimReaperReport.getActiveTargets().report);
+    });
+    bind('btn-modal-copy-link', 'click', () => {
+      window.RimReaperReport.copyShareLink(window.RimReaperReport.getActiveTargets().modal);
+    });
+    bind('btn-modal-share-app', 'click', () => {
+      window.RimReaperReport.shareAppLink(window.RimReaperReport.getActiveTargets().modal);
+    });
 
     // Initialize Sensors & Hands-Free Media/Voice Triggers
     window.AudioRadar.initHandsFreeTriggers({

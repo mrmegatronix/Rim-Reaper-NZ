@@ -243,6 +243,83 @@ window.RimReaperReport = (function () {
     showToast('Downloaded Encrypted Offline Database Backup');
   }
 
+  const SHARE_TARGETS = {
+    pwa: 'https://mrmegatronix.github.io/Rim-Reaper-NZ/',
+    remote: 'https://mrmegatronix.github.io/Rim-Reaper-NZ/remote.html',
+    lan: window.location.origin + window.location.pathname,
+    repo: 'https://github.com/mrmegatronix/Rim-Reaper-NZ'
+  };
+
+  let activeReportQrTarget = 'pwa';
+  let activeModalQrTarget = 'pwa';
+
+  function generateQrCode(url, containerEl) {
+    if (!containerEl) return;
+    try {
+      if (typeof window.qrcode !== 'undefined') {
+        const qr = window.qrcode(0, 'M');
+        qr.addData(url);
+        qr.make();
+        containerEl.innerHTML = qr.createSvgTag({ scalable: true, margin: 1 });
+        return;
+      }
+    } catch (e) {
+      console.warn('Offline QR generator fallback:', e);
+    }
+    const enc = encodeURIComponent(url);
+    containerEl.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${enc}" alt="QR Code" style="width:100%;height:100%;" />`;
+  }
+
+  function renderShareQr(target = 'pwa', isModal = false) {
+    const url = SHARE_TARGETS[target] || SHARE_TARGETS.pwa;
+    if (isModal) {
+      activeModalQrTarget = target;
+      generateQrCode(url, el('modal-qr-code-box'));
+      if (el('modal-qr-link-text')) el('modal-qr-link-text').textContent = url;
+    } else {
+      activeReportQrTarget = target;
+      generateQrCode(url, el('qr-code-box'));
+      if (el('qr-link-text')) el('qr-link-text').textContent = url;
+    }
+  }
+
+  function copyShareLink(target = 'pwa') {
+    const url = SHARE_TARGETS[target] || SHARE_TARGETS.pwa;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+    }
+    showToast(`📋 Copied Link: ${url}`);
+  }
+
+  async function shareAppLink(target = 'pwa') {
+    const url = SHARE_TARGETS[target] || SHARE_TARGETS.pwa;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Rim-Reaper-NZ — Pothole Radar Detector',
+          text: 'Real-time Aotearoa Pothole Radar Detector & 3D Street Map HUD',
+          url
+        });
+        showToast('Shared app link');
+        return;
+      } catch (e) {}
+    }
+    copyShareLink(target);
+  }
+
+  function openShareModal(target = 'pwa') {
+    const modal = el('qr-share-modal');
+    if (modal) {
+      modal.classList.add('open');
+      renderShareQr(target, true);
+    }
+  }
+
+  function closeShareModal() {
+    const modal = el('qr-share-modal');
+    if (modal) modal.classList.remove('open');
+  }
+
   return {
     getSelectedHazard,
     renderCouncilPreview,
@@ -251,6 +328,12 @@ window.RimReaperReport = (function () {
     sendMailtoCouncil,
     exportCsv,
     exportGeoJson,
-    exportBackupDb
+    exportBackupDb,
+    renderShareQr,
+    copyShareLink,
+    shareAppLink,
+    openShareModal,
+    closeShareModal,
+    getActiveTargets: () => ({ report: activeReportQrTarget, modal: activeModalQrTarget })
   };
 })();

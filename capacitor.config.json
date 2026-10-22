@@ -1,0 +1,12 @@
+{
+  "appId": "nz.rimreaper.radar",
+  "appName": "Rim-Reaper-NZ",
+  "webDir": ".",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#09090b"
+  }
+}

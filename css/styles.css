@@ -7,31 +7,60 @@
    ========================================================================== */
 
 :root {
-  --bg-void: #05070a;
-  --bg-panel: #0b1017;
-  --bg-card: #111823;
-  --bg-elevated: #172130;
-  --border-dim: #1e2c40;
-  --border-bright: #2d4260;
+  /* shadcn/ui zinc dark tokens */
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
 
-  --text-primary: #f2f6fc;
-  --text-secondary: #9bb0c9;
-  --text-muted: #5d738f;
+  --bg-void: hsl(var(--background));
+  --bg-panel: hsl(240 5.9% 6%);
+  --bg-card: hsl(240 5.9% 10%);
+  --bg-elevated: hsl(240 3.7% 15.9%);
+  --border-dim: hsl(var(--border));
+  --border-bright: hsl(240 3.7% 24%);
 
-  --accent-red: #ff2a2a;
-  --accent-red-glow: rgba(255, 42, 42, 0.35);
-  --accent-amber: #ffb000;
-  --accent-amber-glow: rgba(255, 176, 0, 0.3);
-  --accent-green: #00f58c;
-  --accent-green-glow: rgba(0, 245, 140, 0.28);
-  --accent-cyan: #00d4ff;
-  --accent-purple: #b366ff;
+  --text-primary: hsl(var(--foreground));
+  --text-secondary: hsl(var(--muted-foreground));
+  --text-muted: hsl(240 5% 48%);
+
+  /* High-visibility radar alert accents */
+  --accent-red: #ef4444;
+  --accent-red-glow: rgba(239, 68, 68, 0.35);
+  --accent-amber: #f59e0b;
+  --accent-amber-glow: rgba(245, 158, 11, 0.3);
+  --accent-green: #10b981;
+  --accent-green-glow: rgba(16, 185, 129, 0.28);
+  --accent-cyan: #06b6d4;
+  --accent-purple: #8b5cf6;
 
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 body.theme-night-red {
+  --background: 0 100% 2%;
+  --foreground: 0 100% 65%;
+  --card: 0 90% 4%;
+  --border: 0 80% 18%;
   --bg-void: #050000;
   --bg-panel: #0d0202;
   --bg-card: #160404;
@@ -177,26 +206,33 @@ h3,
 .boot-splash-card {
   width: 100%;
   max-width: 520px;
-  background: rgba(11, 16, 23, 0.96);
-  border: 2px solid var(--accent-red);
-  border-radius: 16px;
-  padding: 22px 20px;
+  background: hsl(var(--card) / 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-xl);
+  padding: 24px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  box-shadow: 0 0 50px rgba(255, 42, 42, 0.35);
+  gap: 14px;
+  box-shadow: 0 25px 65px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(239, 68, 68, 0.2);
   text-align: center;
 }
 
 .boot-splash-logo {
-  width: 156px;
-  height: 156px;
-  border-radius: 18px;
+  width: clamp(210px, 58vw, 300px);
+  height: clamp(210px, 58vw, 300px);
+  border-radius: 24px;
   object-fit: cover;
-  border: 2.5px solid var(--accent-amber);
-  box-shadow: 0 0 28px rgba(255, 176, 0, 0.4);
+  border: 2px solid hsl(var(--border));
+  box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.9), 0 0 32px rgba(245, 158, 11, 0.25);
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.boot-splash-logo:active {
+  transform: scale(0.97);
 }
 
 .boot-splash-title {
@@ -688,11 +724,36 @@ h3,
   width: 100%;
   height: 100%;
   min-height: 180px;
-  background: radial-gradient(circle at center, #0c1824 0%, #05080d 80%);
-  border: 1px solid var(--border-bright);
-  border-radius: 10px;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-lg);
   overflow: hidden;
   display: grid;
+}
+
+.radar-scope-wrapper.mode-3d-overlay {
+  display: block;
+}
+
+.radar-scope-wrapper.mode-3d-overlay .leaflet-hud-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  z-index: 1;
+  border-bottom: none;
+}
+
+.radar-scope-wrapper.mode-3d-overlay .radar-canvas-pane {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 20;
 }
 
 .radar-scope-wrapper.mode-map-only,
@@ -712,14 +773,14 @@ h3,
 }
 
 .radar-scope-wrapper.split-map-radar .leaflet-hud-map {
-  border-bottom: 1.5px solid var(--border-bright);
+  border-bottom: 1.5px solid hsl(var(--border));
 }
 
 .leaflet-hud-map {
   width: 100%;
   height: 100%;
   min-height: 120px;
-  background: #070d14;
+  background: hsl(var(--background));
   z-index: 1;
 }
 
@@ -728,7 +789,7 @@ h3,
   width: 100%;
   height: 100%;
   min-height: 120px;
-  background: radial-gradient(circle at center, #0c1824 0%, #05080d 85%);
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.4) 0%, rgba(9, 9, 11, 0.8) 85%);
 }
 
 #radar-canvas {
@@ -741,15 +802,15 @@ h3,
   width: 100%;
   height: 250px;
   min-height: 220px;
-  border-radius: 8px;
-  border: 1px solid var(--border-bright);
-  background: #070d14;
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
   flex-shrink: 0;
   z-index: 1;
 }
 
 .leaflet-tile-pane {
-  filter: invert(100%) hue-rotate(180deg) brightness(94%) contrast(92%);
+  filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(96%) grayscale(30%);
 }
 
 .map-location-overlay {
@@ -1255,4 +1316,100 @@ textarea.input-field {
     font-size: 10px;
     color: var(--accent-cyan);
   }
+}
+
+/* ==========================================================================
+   Shadcn/UI QR Code Sharing Card & Modal Dialog
+   ========================================================================== */
+.qr-share-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.qr-box-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  background: hsl(var(--muted));
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+}
+
+.qr-code-display {
+  width: 220px;
+  height: 220px;
+  background: #ffffff;
+  padding: 12px;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-code-display svg,
+.qr-code-display img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.qr-link-readout {
+  width: 100%;
+  max-width: 320px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 10px;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  color: hsl(var(--foreground));
+  text-align: center;
+  word-break: break-all;
+}
+
+.qr-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 3800;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.qr-modal.open {
+  display: flex;
+}
+
+.qr-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 9, 11, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.qr-modal-panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9);
 }
