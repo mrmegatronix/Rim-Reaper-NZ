@@ -104,6 +104,20 @@ window.RimReaperCore = (function () {
     state.currentLang = lang === 'mi' ? 'mi' : 'en';
     window.AudioRadar.setLanguage(state.currentLang);
     const dict = I18N[state.currentLang];
+    const updateTab = (btnId, text) => {
+      const btn = el(btnId);
+      if (!btn) return;
+      const label = btn.querySelector('.nav-tab-label');
+      if (label) {
+        label.textContent = text.replace(/^\d+\.\s*/, '');
+      } else {
+        btn.textContent = text;
+      }
+    };
+    updateTab('tab-btn-radar', dict.tabRadar);
+    updateTab('tab-btn-log', dict.tabReview);
+    updateTab('tab-btn-planner', dict.tabPlanner);
+    updateTab('tab-btn-report', dict.tabCouncil);
     if (el('tab-radar')) el('tab-radar').textContent = dict.tabRadar;
     if (el('tab-review')) el('tab-review').textContent = dict.tabReview;
     if (el('tab-planner')) el('tab-planner').textContent = dict.tabPlanner;

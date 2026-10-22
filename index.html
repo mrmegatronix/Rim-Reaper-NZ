@@ -210,10 +210,22 @@
         <a id="btn-https-switch" href="https://mrmegatronix.github.io/Rim-Reaper-NZ/" class="btn btn-amber" style="display:none;text-decoration:none;" title="Switch to HTTPS for Live Mobile GPS">🔒 HTTPS GPS</a>
         <button id="btn-install-pwa" class="btn btn-success" style="display:none;" title="Install Rim-Reaper-NZ to Phone Home Screen">📲 INSTALL</button>
         <nav class="nav-tabs" role="tablist">
-          <button id="tab-radar" class="nav-tab active" role="tab">1. DRIVE</button>
-          <button id="tab-review" class="nav-tab" role="tab">2. LOG</button>
-          <button id="tab-planner" class="nav-tab" role="tab">3. ROUTE</button>
-          <button id="tab-council" class="nav-tab" role="tab">4. REPORT</button>
+          <button id="tab-radar" class="nav-tab active" role="tab">
+            <span class="nav-tab-icon">🚘</span>
+            <span>DRIVE</span>
+          </button>
+          <button id="tab-review" class="nav-tab" role="tab">
+            <span class="nav-tab-icon">📋</span>
+            <span>LOG</span>
+          </button>
+          <button id="tab-planner" class="nav-tab" role="tab">
+            <span class="nav-tab-icon">🗺️</span>
+            <span>ROUTE</span>
+          </button>
+          <button id="tab-council" class="nav-tab" role="tab">
+            <span class="nav-tab-icon">📊</span>
+            <span>REPORT</span>
+          </button>
         </nav>
         <button id="btn-open-share" class="btn btn-amber" title="Share App via Offline QR Code">📲 SHARE</button>
         <button id="btn-open-settings" class="btn" title="Open Settings, Sound, Simulator &amp; Telemetry">⚙️</button>
@@ -281,81 +293,96 @@
           </div>
         </div>
 
-        <!-- Center 3-Zone Driving HUD (Default Full Screen on Mobile & Tablet) -->
+        <!-- Center Combined 3D Cockpit Driving HUD -->
         <div class="radar-center-column">
-          <!-- ZONE 1: Top Speed, Heading & Geiger Proximity Bar -->
-          <div id="geiger-banner" class="geiger-alert-banner">
-            <div class="geiger-top-row">
-              <div class="control-row" style="gap:8px;min-width:0;">
-                <span id="minimal-speed-pill" class="minimal-hud-speed"><span id="min-speed-num">0</span> <small>KM/H</small></span>
-                <span id="minimal-heading-pill" class="minimal-hud-heading">345° NNW • LEFT LANE</span>
-                <span id="geiger-zone-title" class="geiger-zone-title">POTHOLE SCANNER ACTIVE</span>
-              </div>
-              <span id="geiger-distance-readout" class="geiger-distance-readout">CLEAR</span>
+          <!-- COMBINED 3D COCKPIT STREET MAP & HEADS-UP RADAR -->
+          <div id="radar-display-split" class="radar-scope-wrapper mode-3d-cockpit">
+            <!-- 3D Perspective Map Stage -->
+            <div id="radar-3d-stage" class="radar-3d-stage">
+              <div id="radar-live-map" class="leaflet-hud-map" aria-label="Live NZ Pothole Road Map"></div>
             </div>
-            <div class="geiger-bars">
-              <div id="geiger-seg-1" class="geiger-seg lit-green"></div>
-              <div id="geiger-seg-2" class="geiger-seg lit-green"></div>
-              <div id="geiger-seg-3" class="geiger-seg"></div>
-              <div id="geiger-seg-4" class="geiger-seg"></div>
-              <div id="geiger-seg-5" class="geiger-seg"></div>
-              <div id="geiger-seg-6" class="geiger-seg"></div>
-              <div id="geiger-seg-7" class="geiger-seg"></div>
-              <div id="geiger-seg-8" class="geiger-seg"></div>
-              <div id="geiger-seg-9" class="geiger-seg"></div>
-              <div id="geiger-seg-10" class="geiger-seg"></div>
-            </div>
-            <div class="control-row" style="justify-content:space-between;">
-              <span id="geiger-detail-line" class="hud-metric-label" style="color:var(--text-secondary);">
-                Scanning NZ Keep-Left Lane (±45° cone) • Opposite-lane potholes suppressed
-              </span>
-              <span id="hud-accuracy-val" class="hud-metric-label" style="color:var(--accent-green);">±4.1m</span>
-            </div>
-          </div>
 
-          <!-- ZONE 2: Middle Interactive Map / 3D Lane with Single Location Bar + Corner View Toggle -->
-          <div id="radar-display-split" class="radar-scope-wrapper split-map-radar">
-            <div id="map-device-location-bar" class="map-location-overlay" title="Tap to re-locate device GPS">
-              <span id="map-loc-dot" class="loc-pulse-dot"></span>
-              <span id="map-loc-text" class="nowrap">📍 LOCATING DEVICE...</span>
-            </div>
-            <button id="btn-cycle-view" class="btn btn-amber map-corner-toggle" title="Cycle 3D Split / Map Only / 3D Lane">⚡ 3D SPLIT</button>
+            <!-- Horizon Sky Gradient (Creates genuine 3D atmospheric driving horizon) -->
+            <div class="cockpit-horizon-sky"></div>
 
-            <div id="radar-live-map" class="leaflet-hud-map" aria-label="Live NZ Pothole Road Map"></div>
+            <!-- Transparent Heads-Up Radar Overlay Canvas -->
             <div id="radar-canvas-pane" class="radar-canvas-pane">
               <canvas id="radar-canvas"></canvas>
             </div>
 
-            <!-- 4-Second Pass-By Verification Banner -->
-            <div id="passby-banner" class="passby-banner">
-              <span id="passby-label" class="nowrap" style="font-family:var(--font-mono);font-size:12px;font-weight:800;color:var(--accent-cyan);">
-                PASSING POTHOLE: STILL THERE OR FIXED?
-              </span>
-              <div class="control-row">
-                <button id="btn-passby-still" class="btn btn-amber">⚠️ STILL THERE (+1)</button>
-                <button id="btn-passby-fixed" class="btn btn-success">✅ FIXED</button>
+            <!-- FLOATING HUD LAYER -->
+            <div class="hud-floating-layer">
+              <!-- Top Floating Speedometer & Geiger Proximity HUD Card -->
+              <div id="geiger-banner" class="geiger-alert-banner floating-hud-card">
+                <div class="geiger-top-row">
+                  <div class="control-row" style="gap:6px;min-width:0;">
+                    <span id="minimal-speed-pill" class="minimal-hud-speed"><span id="min-speed-num">0</span> <small>KM/H</small></span>
+                    <div class="speed-limit-disc" id="hud-speed-limit" title="Corridor Speed Limit">100</div>
+                    <span id="minimal-heading-pill" class="minimal-hud-heading">345° NNW • LEFT LANE</span>
+                    <span id="geiger-zone-title" class="geiger-zone-title">POTHOLE SCANNER ACTIVE</span>
+                  </div>
+                  <span id="geiger-distance-readout" class="geiger-distance-readout">CLEAR</span>
+                </div>
+                <div class="geiger-bars">
+                  <div id="geiger-seg-1" class="geiger-seg lit-green"></div>
+                  <div id="geiger-seg-2" class="geiger-seg lit-green"></div>
+                  <div id="geiger-seg-3" class="geiger-seg"></div>
+                  <div id="geiger-seg-4" class="geiger-seg"></div>
+                  <div id="geiger-seg-5" class="geiger-seg"></div>
+                  <div id="geiger-seg-6" class="geiger-seg"></div>
+                  <div id="geiger-seg-7" class="geiger-seg"></div>
+                  <div id="geiger-seg-8" class="geiger-seg"></div>
+                  <div id="geiger-seg-9" class="geiger-seg"></div>
+                  <div id="geiger-seg-10" class="geiger-seg"></div>
+                </div>
+                <div class="control-row" style="justify-content:space-between;">
+                  <span id="geiger-detail-line" class="hud-metric-label" style="color:var(--text-secondary);">
+                    Scanning NZ Keep-Left Lane (±45° cone) • Opposite-lane potholes suppressed
+                  </span>
+                  <span id="hud-accuracy-val" class="hud-metric-label" style="color:var(--accent-green);">±4.1m</span>
+                </div>
+              </div>
+
+              <!-- Top-Right View Mode Toggle -->
+              <button id="btn-cycle-view" class="btn btn-amber map-corner-toggle" title="Cycle 3D Cockpit / 2D Map / Dual View">🚘 3D COCKPIT</button>
+
+              <!-- Location & RAMM Road Corridor Glass Bar -->
+              <div id="map-device-location-bar" class="map-location-overlay" title="Tap to re-locate device GPS">
+                <span id="map-loc-dot" class="loc-pulse-dot"></span>
+                <span id="map-loc-text" class="nowrap">📍 LOCATING DEVICE...</span>
+              </div>
+
+              <!-- 4-Second Pass-By Verification Banner -->
+              <div id="passby-banner" class="passby-banner">
+                <span id="passby-label" class="nowrap" style="font-family:var(--font-mono);font-size:12px;font-weight:800;color:var(--accent-cyan);">
+                  PASSING POTHOLE: STILL THERE OR FIXED?
+                </span>
+                <div class="control-row">
+                  <button id="btn-passby-still" class="btn btn-amber">⚠️ STILL THERE (+1)</button>
+                  <button id="btn-passby-fixed" class="btn btn-success">✅ FIXED</button>
+                </div>
+              </div>
+
+              <!-- Bottom Floating 1-Tap Action Dock -->
+              <div class="one-tap-zone floating-action-dock">
+                <button id="btn-log-rim" class="btn-giant-log">
+                  <span id="btn-giant-title">💥 TAP TO LOG POTHOLE (LEFT LANE)</span>
+                  <span id="btn-giant-sub" class="btn-giant-sub">1.75s Reaction Lookback • Auto-Deduplicates ≤8m • NZ Left-Hand Lane</span>
+                </button>
+                <button id="btn-log-bump" class="btn-secondary-log" title="Log Moderate Bump / Rut">
+                  <span>⚠️ BUMP</span>
+                </button>
+                <button id="btn-log-slip" class="btn-secondary-log" style="color:var(--accent-cyan);border-color:var(--accent-cyan);" title="Log Slip / Washout / Dropout">
+                  <span>⛰️ SLIP</span>
+                </button>
+                <button id="btn-camera-hud" class="btn-secondary-log" style="color:var(--accent-green);border-color:var(--accent-green);" title="Snap Rear Camera Photo &amp; Log">
+                  <span>📷 PHOTO</span>
+                </button>
+                <button id="btn-drive-settings" class="btn-secondary-log" style="color:var(--text-primary);border-color:var(--border-bright);" title="Open Settings, Sim &amp; Sound">
+                  <span>⚙️ MORE</span>
+                </button>
               </div>
             </div>
-          </div>
-
-          <!-- ZONE 3: Bottom Giant 1-Tap Pothole Logger + Compact Action Strip -->
-          <div class="one-tap-zone">
-            <button id="btn-log-rim" class="btn-giant-log">
-              <span id="btn-giant-title">💥 TAP TO LOG POTHOLE (LEFT LANE)</span>
-              <span id="btn-giant-sub" class="btn-giant-sub">1.75s Reaction Lookback • Auto-Deduplicates ≤8m • NZ Left-Hand Lane</span>
-            </button>
-            <button id="btn-log-bump" class="btn-secondary-log" title="Log Moderate Bump / Rut">
-              <span>⚠️ BUMP</span>
-            </button>
-            <button id="btn-log-slip" class="btn-secondary-log" style="color:var(--accent-cyan);border-color:var(--accent-cyan);" title="Log Slip / Washout / Dropout">
-              <span>⛰️ SLIP</span>
-            </button>
-            <button id="btn-camera-hud" class="btn-secondary-log" style="color:var(--accent-green);border-color:var(--accent-green);" title="Snap Rear Camera Photo &amp; Log">
-              <span>📷 PHOTO</span>
-            </button>
-            <button id="btn-drive-settings" class="btn-secondary-log" style="color:var(--text-primary);border-color:var(--border-bright);" title="Open Settings, Sim &amp; Sound">
-              <span>⚙️ MORE</span>
-            </button>
           </div>
         </div>
 

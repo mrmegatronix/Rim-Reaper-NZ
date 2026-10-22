@@ -16,9 +16,9 @@ window.RimReaperMaps = (function () {
   let plannerRouteLayer = null;
 
   const VIEW_MODES = [
-    { cls: 'split-map-radar', label: '⚡ 3D SPLIT' },
-    { cls: 'mode-map-only', label: '🗺️ MAP ONLY' },
-    { cls: 'mode-scope-only', label: '🛣️ 3D RADAR' }
+    { cls: 'mode-3d-cockpit', label: '🚘 3D COCKPIT' },
+    { cls: 'mode-map-only', label: '🗺️ 2D MAP' },
+    { cls: 'split-map-radar', label: '⚡ DUAL VIEW' }
   ];
   let viewModeIdx = 0;
 
@@ -180,8 +180,8 @@ window.RimReaperMaps = (function () {
     const splitWrap = el('radar-display-split');
     if (splitWrap && (forceSplit || splitWrap.classList.contains('mode-scope-only'))) {
       viewModeIdx = 0;
-      splitWrap.className = 'radar-scope-wrapper split-map-radar';
-      if (el('btn-cycle-view')) el('btn-cycle-view').textContent = '⚡ 3D SPLIT';
+      splitWrap.className = `radar-scope-wrapper ${VIEW_MODES[0].cls}`;
+      if (el('btn-cycle-view')) el('btn-cycle-view').textContent = VIEW_MODES[0].label;
     }
     if (window.RimReaperDrive) {
       window.RimReaperDrive.refreshTelemetryAndHUD();
