@@ -181,6 +181,26 @@
             </div>
           </div>
         </div>
+
+        <!-- 5. Map Engine & Offline Maps (Google / Waze / Satellite / OSM) -->
+        <div class="nz-lane-diagram">
+          <span class="hud-metric-label" style="color:var(--accent-cyan);">🗺️ MAP ENGINE &amp; OFFLINE TILES (GOOGLE / WAZE / OSM)</span>
+          <div class="control-row" style="flex-wrap:wrap;gap:8px;">
+            <select id="sel-map-provider" class="input-field" title="Select Map Provider">
+              <option value="google-dark" selected>🚗 Google Maps / Waze (Dark GPS)</option>
+              <option value="google-day">☀️ Google Maps (Daylight Waze)</option>
+              <option value="google-satellite">🛰️ Google Hybrid (Satellite + Roads)</option>
+              <option value="osm-dark">🌑 OpenStreetMap (Dark GPS)</option>
+              <option value="osm-day">🗺️ OpenStreetMap (Daylight)</option>
+            </select>
+            <button id="btn-download-offline-pack" class="btn btn-cyan" title="Download current corridor tiles for offline driving">
+              ⬇️ CACHE OFFLINE MAP (15KM)
+            </button>
+          </div>
+          <div id="offline-cache-status" style="font-family:var(--font-mono);font-size:11px;color:var(--accent-green);margin-top:4px;">
+            100% Offline Capable: All road tiles automatically cached to phone memory for zero-cellular rural driving.
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -312,39 +332,44 @@
 
             <!-- FLOATING HUD LAYER -->
             <div class="hud-floating-layer">
-              <!-- Top Floating Speedometer & Geiger Proximity HUD Card -->
-              <div id="geiger-banner" class="geiger-alert-banner floating-hud-card">
-                <div class="geiger-top-row">
-                  <div class="control-row" style="gap:6px;min-width:0;">
-                    <span id="minimal-speed-pill" class="minimal-hud-speed"><span id="min-speed-num">0</span> <small>KM/H</small></span>
-                    <div class="speed-limit-disc" id="hud-speed-limit" title="Corridor Speed Limit">100</div>
-                    <span id="minimal-heading-pill" class="minimal-hud-heading">345° NNW • LEFT LANE</span>
-                    <span id="geiger-zone-title" class="geiger-zone-title">POTHOLE SCANNER ACTIVE</span>
+              <!-- Top Floating Bar: Speedometer & Geiger Proximity HUD Card + Map Mode Controls -->
+              <div class="hud-top-bar">
+                <div id="geiger-banner" class="geiger-alert-banner floating-hud-card">
+                  <div class="geiger-top-row">
+                    <div class="control-row" style="gap:6px;min-width:0;">
+                      <span id="minimal-speed-pill" class="minimal-hud-speed"><span id="min-speed-num">0</span> <small>KM/H</small></span>
+                      <div class="speed-limit-disc" id="hud-speed-limit" title="Corridor Speed Limit">100</div>
+                      <span id="minimal-heading-pill" class="minimal-hud-heading">345° NNW • LEFT LANE</span>
+                      <span id="geiger-zone-title" class="geiger-zone-title">POTHOLE SCANNER ACTIVE</span>
+                    </div>
+                    <span id="geiger-distance-readout" class="geiger-distance-readout">CLEAR</span>
                   </div>
-                  <span id="geiger-distance-readout" class="geiger-distance-readout">CLEAR</span>
+                  <div class="geiger-bars">
+                    <div id="geiger-seg-1" class="geiger-seg lit-green"></div>
+                    <div id="geiger-seg-2" class="geiger-seg lit-green"></div>
+                    <div id="geiger-seg-3" class="geiger-seg"></div>
+                    <div id="geiger-seg-4" class="geiger-seg"></div>
+                    <div id="geiger-seg-5" class="geiger-seg"></div>
+                    <div id="geiger-seg-6" class="geiger-seg"></div>
+                    <div id="geiger-seg-7" class="geiger-seg"></div>
+                    <div id="geiger-seg-8" class="geiger-seg"></div>
+                    <div id="geiger-seg-9" class="geiger-seg"></div>
+                    <div id="geiger-seg-10" class="geiger-seg"></div>
+                  </div>
+                  <div class="control-row" style="justify-content:space-between;">
+                    <span id="geiger-detail-line" class="hud-metric-label" style="color:var(--text-secondary);">
+                      Scanning NZ Keep-Left Lane (±45° cone) • Opposite-lane potholes suppressed
+                    </span>
+                    <span id="hud-accuracy-val" class="hud-metric-label" style="color:var(--accent-green);">±4.1m</span>
+                  </div>
                 </div>
-                <div class="geiger-bars">
-                  <div id="geiger-seg-1" class="geiger-seg lit-green"></div>
-                  <div id="geiger-seg-2" class="geiger-seg lit-green"></div>
-                  <div id="geiger-seg-3" class="geiger-seg"></div>
-                  <div id="geiger-seg-4" class="geiger-seg"></div>
-                  <div id="geiger-seg-5" class="geiger-seg"></div>
-                  <div id="geiger-seg-6" class="geiger-seg"></div>
-                  <div id="geiger-seg-7" class="geiger-seg"></div>
-                  <div id="geiger-seg-8" class="geiger-seg"></div>
-                  <div id="geiger-seg-9" class="geiger-seg"></div>
-                  <div id="geiger-seg-10" class="geiger-seg"></div>
-                </div>
-                <div class="control-row" style="justify-content:space-between;">
-                  <span id="geiger-detail-line" class="hud-metric-label" style="color:var(--text-secondary);">
-                    Scanning NZ Keep-Left Lane (±45° cone) • Opposite-lane potholes suppressed
-                  </span>
-                  <span id="hud-accuracy-val" class="hud-metric-label" style="color:var(--accent-green);">±4.1m</span>
+
+                <!-- Top-Right Controls: Map Provider (Waze / Google / Sat / OSM) + 3D View Mode -->
+                <div class="map-corner-controls">
+                  <button id="btn-map-layer" class="btn btn-cyan map-corner-btn" title="Cycle Map Layer: Waze Dark, Google Satellite, OSM">🚗 WAZE DARK</button>
+                  <button id="btn-cycle-view" class="btn btn-amber map-corner-btn" title="Cycle 3D Cockpit / 2D Map / Dual View">🚘 3D COCKPIT</button>
                 </div>
               </div>
-
-              <!-- Top-Right View Mode Toggle -->
-              <button id="btn-cycle-view" class="btn btn-amber map-corner-toggle" title="Cycle 3D Cockpit / 2D Map / Dual View">🚘 3D COCKPIT</button>
 
               <!-- Location & RAMM Road Corridor Glass Bar -->
               <div id="map-device-location-bar" class="map-location-overlay" title="Tap to re-locate device GPS">

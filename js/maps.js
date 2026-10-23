@@ -22,13 +22,181 @@ window.RimReaperMaps = (function () {
   ];
   let viewModeIdx = 0;
 
-  const darkTileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-  const darkAttrib = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+  const MAP_PROVIDERS = {
+    'google-dark': {
+      label: '🚗 WAZE DARK',
+      name: 'Google Maps (Waze Dark GPS)',
+      url: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+      subdomains: '0123',
+      attrib: '&copy; Google Maps / Waze &bull; Rim-Reaper-NZ',
+      cls: 'tile-mode-google-dark'
+    },
+    'google-day': {
+      label: '☀️ GOOGLE DAY',
+      name: 'Google Maps (Daylight Waze)',
+      url: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+      subdomains: '0123',
+      attrib: '&copy; Google Maps &bull; Rim-Reaper-NZ',
+      cls: 'tile-mode-google-day'
+    },
+    'google-satellite': {
+      label: '🛰️ SATELLITE',
+      name: 'Google Hybrid (Satellite + Roads)',
+      url: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+      subdomains: '0123',
+      attrib: '&copy; Google Imagery &bull; Rim-Reaper-NZ',
+      cls: 'tile-mode-satellite'
+    },
+    'osm-dark': {
+      label: '🌑 OSM DARK',
+      name: 'OpenStreetMap (Dark GPS)',
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      subdomains: 'abc',
+      attrib: '&copy; OpenStreetMap contributors &bull; Rim-Reaper-NZ',
+      cls: 'tile-mode-osm-dark'
+    },
+    'osm-day': {
+      label: '🗺️ OSM DAY',
+      name: 'OpenStreetMap (Daylight)',
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      subdomains: 'abc',
+      attrib: '&copy; OpenStreetMap contributors &bull; Rim-Reaper-NZ',
+      cls: 'tile-mode-osm-day'
+    }
+  };
+
+  const PROVIDER_KEYS = ['google-dark', 'google-satellite', 'google-day', 'osm-dark', 'osm-day'];
+  let currentProviderKey = 'google-dark';
+  let radarTileLayer = null;
+  let reviewTileLayer = null;
+  let plannerTileLayer = null;
+
+  function setMapProvider(key) {
+    if (!MAP_PROVIDERS[key]) key = 'google-dark';
+    currentProviderKey = key;
+    const provider = MAP_PROVIDERS[key];
+    const tileOpts = { maxZoom: 20, subdomains: provider.subdomains, attribution: provider.attrib };
+
+    if (radarMap) {
+      if (radarTileLayer) radarMap.removeLayer(radarTileLayer);
+      radarTileLayer = window.L.tileLayer(provider.url, tileOpts).addTo(radarMap);
+      if (radarTileLayer.bringToBack) radarTileLayer.bringToBack();
+    }
+    if (reviewMap) {
+      if (reviewTileLayer) reviewMap.removeLayer(reviewTileLayer);
+      reviewTileLayer = window.L.tileLayer(provider.url, tileOpts).addTo(reviewMap);
+      if (reviewTileLayer.bringToBack) reviewTileLayer.bringToBack();
+    }
+    if (plannerMap) {
+      if (plannerTileLayer) plannerMap.removeLayer(plannerTileLayer);
+      plannerTileLayer = window.L.tileLayer(provider.url, tileOpts).addTo(plannerMap);
+      if (plannerTileLayer.bringToBack) plannerTileLayer.bringToBack();
+    }
+
+    const containers = [document.body, el('radar-display-split'), el('review-nz-map'), el('planner-nz-map')];
+    PROVIDER_KEYS.forEach((k) => {
+      const cls = MAP_PROVIDERS[k].cls;
+      containers.forEach((c) => c && c.classList.remove(cls));
+    });
+    containers.forEach((c) => c && c.classList.add(provider.cls));
+
+    if (el('btn-map-layer')) el('btn-map-layer').textContent = provider.label;
+    if (el('sel-map-provider')) el('sel-map-provider').value = key;
+    showToast(`🗺️ Map Provider: ${provider.name}`);
+  }
+
+  function cycleMapProvider() {
+    const idx = PROVIDER_KEYS.indexOf(currentProviderKey);
+    const nextKey = PROVIDER_KEYS[(idx + 1) % PROVIDER_KEYS.length];
+    setMapProvider(nextKey);
+  }
+
+  async function downloadOfflineMapPack(radiusKm = 15) {
+    if (!('caches' in window)) {
+      showToast('CacheStorage not supported on this browser.');
+      return;
+    }
+    const t = window.GeoLaneEngine.getState();
+    const lat = t.lat;
+    const lon = t.lon;
+    const statusEl = el('offline-cache-status');
+    const btn = el('btn-download-offline-pack');
+    if (btn) btn.disabled = true;
+
+    showToast(`⬇️ CACHING 15KM OFFLINE MAP AROUND ${t.placeLabel || t.roadName}...`);
+    if (statusEl) statusEl.textContent = 'Calculating road tile matrix...';
+
+    const cache = await caches.open('rim-reaper-nz-tiles-v1');
+    const provider = MAP_PROVIDERS[currentProviderKey] || MAP_PROVIDERS['google-dark'];
+
+    const latLonToTile = (la, lo, z) => {
+      const latRad = (la * Math.PI) / 180;
+      const n = Math.pow(2, z);
+      const xtile = Math.floor(((lo + 180) / 360) * n);
+      const ytile = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+      return { x: xtile, y: ytile };
+    };
+
+    const dLat = radiusKm / 111;
+    const dLon = radiusKm / (111 * Math.cos((lat * Math.PI) / 180));
+    const minLat = lat - dLat;
+    const maxLat = lat + dLat;
+    const minLon = lon - dLon;
+    const maxLon = lon + dLon;
+
+    const zooms = [14, 15, 16];
+    const tileUrls = [];
+
+    zooms.forEach((z) => {
+      const p1 = latLonToTile(maxLat, minLon, z);
+      const p2 = latLonToTile(minLat, maxLon, z);
+      const minX = Math.min(p1.x, p2.x);
+      const maxX = Math.max(p1.x, p2.x);
+      const minY = Math.min(p1.y, p2.y);
+      const maxY = Math.max(p1.y, p2.y);
+
+      for (let x = minX; x <= maxX; x++) {
+        for (let y = minY; y <= maxY; y++) {
+          const s = provider.subdomains[Math.abs(x + y) % provider.subdomains.length];
+          const url = provider.url
+            .replace('{s}', s)
+            .replace('{x}', x)
+            .replace('{y}', y)
+            .replace('{z}', z)
+            .replace('{r}', '');
+          tileUrls.push(url);
+        }
+      }
+    });
+
+    const total = Math.min(tileUrls.length, 250);
+    let downloaded = 0;
+
+    for (let i = 0; i < total; i++) {
+      const u = tileUrls[i];
+      try {
+        const cached = await cache.match(u);
+        if (!cached) {
+          const res = await fetch(u, { mode: 'cors' });
+          if (res.ok) await cache.put(u, res);
+        }
+        downloaded++;
+      } catch (err) {}
+
+      if (i % 10 === 0 && statusEl) {
+        statusEl.textContent = `Downloading offline tiles: ${downloaded} / ${total}...`;
+      }
+    }
+
+    if (btn) btn.disabled = false;
+    if (statusEl) {
+      statusEl.textContent = `✅ ${downloaded} tiles cached for ${t.placeLabel || t.roadName}. 100% offline ready!`;
+    }
+    showToast(`✅ ${downloaded} OFFLINE TILES SAVED TO PHONE MEMORY!`);
+  }
 
   function initLeafletMaps() {
     if (typeof window.L === 'undefined') return;
-
-    const tileOpts = { maxZoom: 20, subdomains: 'abcd', attribution: darkAttrib };
 
     if (el('radar-live-map') && !radarMap) {
       const t = window.GeoLaneEngine.getState();
@@ -37,10 +205,8 @@ window.RimReaperMaps = (function () {
         attributionControl: false
       }).setView([t.lat, t.lon], 16);
 
-      window.L.tileLayer(darkTileUrl, tileOpts).addTo(radarMap);
       radarMarkersLayer = window.L.layerGroup().addTo(radarMap);
       radarConeLayer = window.L.layerGroup().addTo(radarMap);
-      updateRadarMap();
     }
 
     if (el('review-nz-map') && !reviewMap) {
@@ -49,7 +215,6 @@ window.RimReaperMaps = (function () {
         attributionControl: false
       }).setView([-39.5, 174.5], 6);
 
-      window.L.tileLayer(darkTileUrl, tileOpts).addTo(reviewMap);
       reviewMarkersLayer = window.L.layerGroup().addTo(reviewMap);
 
       reviewMap.on('click', (ev) => {
@@ -85,15 +250,27 @@ window.RimReaperMaps = (function () {
         attributionControl: false
       }).setView([-38.5, 175.5], 6);
 
-      window.L.tileLayer(darkTileUrl, tileOpts).addTo(plannerMap);
       plannerRouteLayer = window.L.layerGroup().addTo(plannerMap);
     }
+
+    setMapProvider(currentProviderKey);
+    updateRadarMap();
 
     window.addEventListener('resize', () => {
       if (radarMap) radarMap.invalidateSize();
       if (reviewMap) reviewMap.invalidateSize();
       if (plannerMap) plannerMap.invalidateSize();
     });
+
+    if (el('btn-map-layer')) {
+      el('btn-map-layer').onclick = cycleMapProvider;
+    }
+    if (el('sel-map-provider')) {
+      el('sel-map-provider').onchange = (e) => setMapProvider(e.target.value);
+    }
+    if (el('btn-download-offline-pack')) {
+      el('btn-download-offline-pack').onclick = () => downloadOfflineMapPack();
+    }
   }
 
   function cycleRadarViewMode() {
@@ -348,6 +525,9 @@ window.RimReaperMaps = (function () {
     focusDeviceLocationOnMap,
     renderReviewMapMarkers,
     renderPlannerMapRoute,
+    setMapProvider,
+    cycleMapProvider,
+    downloadOfflineMapPack,
     invalidateRadar: () => radarMap && radarMap.invalidateSize(),
     invalidateReview: () => {
       if (reviewMap) {

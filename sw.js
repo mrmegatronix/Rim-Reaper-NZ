@@ -46,8 +46,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Cache OpenStreetMap / LINZ raster tiles for offline rural replay
-  if (url.hostname.includes('tile.openstreetmap.org') || url.hostname.includes('basemaps.linz.govt.nz') || url.hostname.includes('basemaps.cartocdn.com')) {
+  // Cache Google Maps / Waze, OpenStreetMap & LINZ raster tiles for offline rural replay
+  if (
+    url.hostname.includes('google.com') ||
+    url.hostname.includes('googleusercontent.com') ||
+    url.hostname.includes('tile.openstreetmap.org') ||
+    url.hostname.includes('basemaps.linz.govt.nz') ||
+    url.hostname.includes('basemaps.cartocdn.com')
+  ) {
     event.respondWith(
       caches.open(TILE_CACHE_NAME).then((cache) =>
         cache.match(event.request).then((cached) => {

@@ -421,74 +421,79 @@ window.RimReaperDrive = (function () {
       const topHalfW = w * 0.12;
       const botHalfW = w * 0.44;
 
-      ctx.fillStyle = 'rgba(0, 245, 140, 0.09)';
-      ctx.beginPath();
-      ctx.moveTo(cx - topHalfW, horizonY);
-      ctx.lineTo(cx, horizonY);
-      ctx.lineTo(cx, bottomY);
-      ctx.lineTo(cx - botHalfW, bottomY);
-      ctx.closePath();
-      ctx.fill();
+      const splitWrap = el('radar-display-split');
+      const is3dCockpit = splitWrap && splitWrap.classList.contains('mode-3d-cockpit');
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.025)';
-      ctx.beginPath();
-      ctx.moveTo(cx, horizonY);
-      ctx.lineTo(cx + topHalfW, horizonY);
-      ctx.lineTo(cx + botHalfW, bottomY);
-      ctx.lineTo(cx, bottomY);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.strokeStyle = 'rgba(0, 245, 140, 0.75)';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(cx - topHalfW, horizonY);
-      ctx.lineTo(cx - botHalfW, bottomY);
-      ctx.stroke();
-
-      ctx.strokeStyle = 'rgba(155, 176, 201, 0.35)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(cx + topHalfW, horizonY);
-      ctx.lineTo(cx + botHalfW, bottomY);
-      ctx.stroke();
-
-      ctx.strokeStyle = '#ffb000';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([14, 12]);
-      ctx.beginPath();
-      ctx.moveTo(cx, horizonY);
-      ctx.lineTo(cx, bottomY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      const distMarkers = [
-        { d: 100, frac: 0.78, label: '100m BRACE' },
-        { d: 250, frac: 0.56, label: '250m CAUTION' },
-        { d: 450, frac: 0.36, label: '450m APPROACH' },
-        { d: 700, frac: 0.2, label: '700m HORIZON' }
-      ];
-
-      distMarkers.forEach((m) => {
-        const y = horizonY + (bottomY - horizonY) * m.frac;
-        const halfW = topHalfW + (botHalfW - topHalfW) * m.frac;
-        ctx.strokeStyle = 'rgba(0, 212, 255, 0.2)';
-        ctx.lineWidth = 1;
+      if (!is3dCockpit) {
+        ctx.fillStyle = 'rgba(0, 245, 140, 0.09)';
         ctx.beginPath();
-        ctx.moveTo(cx - halfW, y);
-        ctx.lineTo(cx + halfW, y);
+        ctx.moveTo(cx - topHalfW, horizonY);
+        ctx.lineTo(cx, horizonY);
+        ctx.lineTo(cx, bottomY);
+        ctx.lineTo(cx - botHalfW, bottomY);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.025)';
+        ctx.beginPath();
+        ctx.moveTo(cx, horizonY);
+        ctx.lineTo(cx + topHalfW, horizonY);
+        ctx.lineTo(cx + botHalfW, bottomY);
+        ctx.lineTo(cx, bottomY);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(0, 245, 140, 0.75)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - topHalfW, horizonY);
+        ctx.lineTo(cx - botHalfW, bottomY);
         ctx.stroke();
 
-        ctx.fillStyle = 'rgba(155, 176, 201, 0.75)';
-        ctx.font = 'bold 10px monospace';
-        ctx.fillText(m.label, cx - halfW + 6, y - 4);
-      });
+        ctx.strokeStyle = 'rgba(155, 176, 201, 0.35)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx + topHalfW, horizonY);
+        ctx.lineTo(cx + botHalfW, bottomY);
+        ctx.stroke();
 
-      ctx.fillStyle = '#00f58c';
-      ctx.font = 'bold 11px monospace';
-      ctx.fillText('▲ NZ KEEP-LEFT LANE (ACTIVE)', cx - botHalfW + 10, bottomY - 10);
-      ctx.fillStyle = 'rgba(155, 176, 201, 0.5)';
-      ctx.fillText('▼ OPPOSING LANE (IGNORED)', cx + 14, bottomY - 10);
+        ctx.strokeStyle = '#ffb000';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([14, 12]);
+        ctx.beginPath();
+        ctx.moveTo(cx, horizonY);
+        ctx.lineTo(cx, bottomY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const distMarkers = [
+          { d: 100, frac: 0.78, label: '100m BRACE' },
+          { d: 250, frac: 0.56, label: '250m CAUTION' },
+          { d: 450, frac: 0.36, label: '450m APPROACH' },
+          { d: 700, frac: 0.2, label: '700m HORIZON' }
+        ];
+
+        distMarkers.forEach((m) => {
+          const y = horizonY + (bottomY - horizonY) * m.frac;
+          const halfW = topHalfW + (botHalfW - topHalfW) * m.frac;
+          ctx.strokeStyle = 'rgba(0, 212, 255, 0.2)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(cx - halfW, y);
+          ctx.lineTo(cx + halfW, y);
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(155, 176, 201, 0.75)';
+          ctx.font = 'bold 10px monospace';
+          ctx.fillText(m.label, cx - halfW + 6, y - 4);
+        });
+
+        ctx.fillStyle = '#00f58c';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText('▲ NZ KEEP-LEFT LANE (ACTIVE)', cx - botHalfW + 10, bottomY - 10);
+        ctx.fillStyle = 'rgba(155, 176, 201, 0.5)';
+        ctx.fillText('▼ OPPOSING LANE (IGNORED)', cx + 14, bottomY - 10);
+      }
 
       const t = window.GeoLaneEngine.getState();
       state.cachedHazards.forEach((hz) => {
