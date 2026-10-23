@@ -16,47 +16,34 @@ window.RimReaperMaps = (function () {
   let plannerRouteLayer = null;
 
   const VIEW_MODES = [
-    { cls: 'mode-3d-cockpit', label: '🚘 3D COCKPIT' },
-    { cls: 'mode-map-only', label: '🗺️ 2D MAP' },
-    { cls: 'split-map-radar', label: '⚡ DUAL VIEW' }
+    { cls: 'mode-3d-cockpit', label: '🚘 3D COCKPIT', icon: '🚘' },
+    { cls: 'mode-map-only', label: '🗺️ 2D MAP', icon: '🗺️' },
+    { cls: 'split-map-radar', label: '⚡ DUAL VIEW', icon: '⚡' }
   ];
   let viewModeIdx = 0;
 
   const MAP_PROVIDERS = {
-    'google-dark': {
-      label: '🚗 WAZE DARK',
-      name: 'Google Maps (Waze Dark GPS)',
-      url: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-      subdomains: '0123',
-      attrib: '&copy; Google Maps / Waze &bull; Rim-Reaper-NZ',
-      cls: 'tile-mode-google-dark'
-    },
-    'google-day': {
-      label: '☀️ GOOGLE DAY',
-      name: 'Google Maps (Daylight Waze)',
-      url: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-      subdomains: '0123',
-      attrib: '&copy; Google Maps &bull; Rim-Reaper-NZ',
-      cls: 'tile-mode-google-day'
-    },
-    'google-satellite': {
+    'google-hybrid': {
       label: '🛰️ SATELLITE',
+      icon: '🛰️',
       name: 'Google Hybrid (Satellite + Roads)',
       url: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
       subdomains: '0123',
       attrib: '&copy; Google Imagery &bull; Rim-Reaper-NZ',
       cls: 'tile-mode-satellite'
     },
-    'osm-dark': {
-      label: '🌑 OSM DARK',
-      name: 'OpenStreetMap (Dark GPS)',
-      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      subdomains: 'abc',
-      attrib: '&copy; OpenStreetMap contributors &bull; Rim-Reaper-NZ',
-      cls: 'tile-mode-osm-dark'
+    'google-day': {
+      label: '☀️ GOOGLE MAP',
+      icon: '☀️',
+      name: 'Google Maps (Daylight)',
+      url: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+      subdomains: '0123',
+      attrib: '&copy; Google Maps &bull; Rim-Reaper-NZ',
+      cls: 'tile-mode-google-day'
     },
     'osm-day': {
-      label: '🗺️ OSM DAY',
+      label: '🗺️ OSM STREET',
+      icon: '🗺️',
       name: 'OpenStreetMap (Daylight)',
       url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       subdomains: 'abc',
@@ -65,14 +52,14 @@ window.RimReaperMaps = (function () {
     }
   };
 
-  const PROVIDER_KEYS = ['google-dark', 'google-satellite', 'google-day', 'osm-dark', 'osm-day'];
-  let currentProviderKey = 'google-dark';
+  const PROVIDER_KEYS = ['google-hybrid', 'google-day', 'osm-day'];
+  let currentProviderKey = 'google-hybrid';
   let radarTileLayer = null;
   let reviewTileLayer = null;
   let plannerTileLayer = null;
 
   function setMapProvider(key) {
-    if (!MAP_PROVIDERS[key]) key = 'google-dark';
+    if (!MAP_PROVIDERS[key]) key = 'google-hybrid';
     currentProviderKey = key;
     const provider = MAP_PROVIDERS[key];
     const tileOpts = { maxZoom: 20, subdomains: provider.subdomains, attribution: provider.attrib };
@@ -100,7 +87,7 @@ window.RimReaperMaps = (function () {
     });
     containers.forEach((c) => c && c.classList.add(provider.cls));
 
-    if (el('btn-map-layer')) el('btn-map-layer').textContent = provider.label;
+    if (el('btn-map-layer')) el('btn-map-layer').textContent = provider.icon || '🚗';
     if (el('sel-map-provider')) el('sel-map-provider').value = key;
     showToast(`🗺️ Map Provider: ${provider.name}`);
   }
@@ -127,7 +114,7 @@ window.RimReaperMaps = (function () {
     if (statusEl) statusEl.textContent = 'Calculating road tile matrix...';
 
     const cache = await caches.open('rim-reaper-nz-tiles-v1');
-    const provider = MAP_PROVIDERS[currentProviderKey] || MAP_PROVIDERS['google-dark'];
+    const provider = MAP_PROVIDERS[currentProviderKey] || MAP_PROVIDERS['google-hybrid'];
 
     const latLonToTile = (la, lo, z) => {
       const latRad = (la * Math.PI) / 180;
@@ -206,7 +193,7 @@ window.RimReaperMaps = (function () {
       radarMap = window.L.map('radar-live-map', {
         zoomControl: false,
         attributionControl: false
-      }).setView([t.lat, t.lon], 16);
+      }).setView([t.lat, t.lon], 18.5);
 
       radarMarkersLayer = window.L.layerGroup().addTo(radarMap);
       radarConeLayer = window.L.layerGroup().addTo(radarMap);
@@ -282,7 +269,7 @@ window.RimReaperMaps = (function () {
     viewModeIdx = (viewModeIdx + 1) % VIEW_MODES.length;
     const next = VIEW_MODES[viewModeIdx];
     splitWrap.className = `radar-scope-wrapper ${next.cls}`;
-    if (el('btn-cycle-view')) el('btn-cycle-view').textContent = next.label;
+    if (el('btn-cycle-view')) el('btn-cycle-view').textContent = next.icon || '🚘';
     const mapEl = el('radar-live-map');
     if (mapEl && next.cls !== 'mode-3d-cockpit') {
       mapEl.style.setProperty('--vehicle-heading', '0');
@@ -307,9 +294,9 @@ window.RimReaperMaps = (function () {
     const rad = (t.heading * Math.PI) / 180;
 
     if (is3dCockpit) {
-      // Offset target 130m ahead for 3D cockpit perspective ground plane
-      centerLat = t.lat + (130 * Math.cos(rad)) / 111320;
-      centerLon = t.lon + (130 * Math.sin(rad)) / (111320 * Math.cos((t.lat * Math.PI) / 180));
+      // Offset target 35m ahead for zoomed-in 3D cockpit perspective
+      centerLat = t.lat + (35 * Math.cos(rad)) / 111320;
+      centerLon = t.lon + (35 * Math.sin(rad)) / (111320 * Math.cos((t.lat * Math.PI) / 180));
       const mapEl = el('radar-live-map');
       if (mapEl) {
         mapEl.style.setProperty('--vehicle-heading', `${Math.round(t.heading)}`);
@@ -321,7 +308,8 @@ window.RimReaperMaps = (function () {
       }
     }
 
-    radarMap.setView([centerLat, centerLon], radarMap.getZoom() || (is3dCockpit ? 17 : 16), { animate: false });
+    const targetZoom = is3dCockpit ? 19 : 17.5;
+    radarMap.setView([centerLat, centerLon], targetZoom, { animate: false });
     radarConeLayer.clearLayers();
     radarMarkersLayer.clearLayers();
 
@@ -422,14 +410,14 @@ window.RimReaperMaps = (function () {
     if (splitWrap && (forceSplit || splitWrap.classList.contains('mode-scope-only'))) {
       viewModeIdx = 0;
       splitWrap.className = `radar-scope-wrapper ${VIEW_MODES[0].cls}`;
-      if (el('btn-cycle-view')) el('btn-cycle-view').textContent = VIEW_MODES[0].label;
+      if (el('btn-cycle-view')) el('btn-cycle-view').textContent = VIEW_MODES[0].icon || '🚘';
     }
     if (window.RimReaperDrive) {
       window.RimReaperDrive.refreshTelemetryAndHUD();
     }
     if (radarMap) {
       radarMap.invalidateSize();
-      radarMap.setView([t.lat, t.lon], 16, { animate: true });
+      radarMap.setView([t.lat, t.lon], 18.5, { animate: true });
       if (openPopup && radarVehicleMarker) {
         radarVehicleMarker.openPopup();
       }

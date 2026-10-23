@@ -295,9 +295,10 @@ window.RimReaperDrive = (function () {
     const juris = window.NZ_DATA.resolveJurisdiction(t.lat, t.lon, t.roadName);
 
     if (el('map-loc-text')) {
-      const locTitle = t.placeLabel && t.placeLabel !== 'Locating Device...' ? t.placeLabel : t.roadName;
-      const srcBadge = t.isSimulating ? 'SIM' : t.hasRealGps ? `GPS ±${Math.round(t.accuracyM)}m` : 'DEVICE LOC';
-      el('map-loc-text').textContent = `📍 ${locTitle} • ${t.lat.toFixed(4)}, ${t.lon.toFixed(4)} (${srcBadge})`;
+      const rawTitle = t.placeLabel && t.placeLabel !== 'Locating Device...' ? t.placeLabel : t.roadName;
+      const locTitle = (rawTitle || '').replace(/\s*\([^)]*\)/, '');
+      el('map-loc-text').textContent = locTitle ? `📍 ${locTitle}` : '📍 LOCATING ROAD...';
+      el('map-loc-text').title = `${rawTitle} (${t.lat.toFixed(4)}, ${t.lon.toFixed(4)})`;
     }
 
     if (!window.isSecureContext && el('btn-https-switch')) {
@@ -311,7 +312,7 @@ window.RimReaperDrive = (function () {
     setTxt('hud-speed-val', `${t.speedKmh}`);
     setTxt('sheet-speed-val', `${t.speedKmh} km/h`);
     setTxt('min-speed-num', `${t.speedKmh}`);
-    setTxt('minimal-heading-pill', `${t.heading}° ${t.cardinal} • NZ LEFT LANE`);
+    setTxt('minimal-heading-pill', `${t.heading}° ${t.cardinal}`);
     setTxt('hud-speed-limit', `${t.speedLimitKmh}`);
     setTxt('hud-heading-val', `${t.heading}° ${t.cardinal}`);
     setTxt('sheet-heading-val', `${t.heading}° ${t.cardinal}`);
@@ -417,7 +418,7 @@ window.RimReaperDrive = (function () {
       }
       if (advisory) advisory.textContent = 'KEEP LEFT';
       if (trackPill) trackPill.textContent = `${t.wheelTrack ? t.wheelTrack.replace(/ \(.*\)/, '') : 'LEFT VERGE'}`;
-      instruction.textContent = `STAY IN LEFT LANE • ${t.speedLimitKmh || 100} KM/H CRUISE`;
+      instruction.textContent = 'STAY IN LEFT LANE • ROAD CLEAR';
       if (detail) detail.textContent = `${t.cardinal}-Bound ${t.roadName || 'Road Corridor'} • NZ Rule 2.1: Drive on the left`;
     }
   }
@@ -443,7 +444,7 @@ window.RimReaperDrive = (function () {
         scan.isCluster,
         t.isSimulating
       );
-      if (banner) banner.className = `geiger-alert-banner level-${alertInfo.level}`;
+      if (banner) banner.className = `geiger-alert-banner floating-hud-card unified-nav-card level-${alertInfo.level}`;
       if (zoneTitle) {
         zoneTitle.textContent = scan.isCluster
           ? `⚠️ SWISS CHEESE CLUSTER (${scan.clusterCount} CRATERS IN 50M)`
@@ -490,7 +491,7 @@ window.RimReaperDrive = (function () {
       if (state.lastSpokenHazardId) {
         state.lastSpokenHazardId = null;
       }
-      if (banner) banner.className = 'geiger-alert-banner';
+      if (banner) banner.className = 'geiger-alert-banner floating-hud-card unified-nav-card';
       if (zoneTitle) zoneTitle.textContent = 'POTHOLE SCANNER ACTIVE — CLEAR CORRIDOR AHEAD';
       if (distReadout) distReadout.textContent = 'CLEAR';
       if (detailLine) {

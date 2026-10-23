@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="./logo.jpg" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <link rel="stylesheet" href="./css/styles.css?v=2.4.0" />
+  <link rel="stylesheet" href="./css/styles.css?v=2.6.5" />
 </head>
 <body>
   <!-- Hidden Rear Smartphone Camera Input for Instant Pothole Evidence Capture -->
@@ -243,7 +243,7 @@
 
       <div class="top-controls">
         <a id="btn-https-switch" href="https://mrmegatronix.github.io/Rim-Reaper-NZ/" class="btn btn-amber" style="display:none;text-decoration:none;" title="Switch to HTTPS for Live Mobile GPS">🔒 HTTPS GPS</a>
-        <button id="btn-install-pwa" class="btn btn-success" style="display:none;" title="Install Rim-Reaper-NZ to Phone Home Screen"><span>📲</span><span class="btn-lbl"> INSTALL</span></button>
+        <button id="btn-install-pwa" class="btn btn-success" style="display:none;" title="Install Rim-Reaper-NZ to Phone Home Screen"><span>📥</span><span class="btn-lbl"> INSTALL</span></button>
         <nav class="nav-tabs" role="tablist">
           <button id="tab-radar" class="nav-tab active" role="tab">
             <span class="nav-tab-icon">🚘</span>
@@ -262,7 +262,7 @@
             <span>REPORT</span>
           </button>
         </nav>
-        <button id="btn-open-share" class="btn btn-amber" title="Share App via Offline QR Code"><span>📲</span><span class="btn-lbl"> SHARE</span></button>
+        <button id="btn-open-share" class="btn btn-amber" title="Share App via Offline QR Code"><span>🔗</span><span class="btn-lbl"> SHARE</span></button>
         <button id="btn-open-settings" class="btn" title="Open Settings, Sound, Simulator &amp; Telemetry">⚙️</button>
         <div class="hud-clock live-clock-target" aria-label="Digital Clock">20<span class="blink-colon">:</span>00<span class="blink-colon">:</span>00</div>
       </div>
@@ -347,86 +347,60 @@
 
             <!-- FLOATING HUD LAYER -->
             <div class="hud-floating-layer">
-              <!-- Top Floating Bar: Speedometer & Geiger Proximity HUD Card + Map Mode Controls -->
+              <!-- Top Unified Driving HUD (Sleek Waze/CarPlay Style) -->
               <div class="hud-top-bar">
-                <div id="geiger-banner" class="geiger-alert-banner floating-hud-card">
-                  <div class="geiger-top-row">
-                    <div class="control-row" style="gap:6px;min-width:0;">
+                <div id="geiger-banner" class="geiger-alert-banner floating-hud-card unified-nav-card">
+                  <div class="nav-hud-main-row">
+                    <div class="nav-hud-speed-cluster">
                       <span id="minimal-speed-pill" class="minimal-hud-speed"><span id="min-speed-num">0</span> <small>KM/H</small></span>
                       <div class="speed-limit-disc" id="hud-speed-limit" title="Corridor Speed Limit">100</div>
-                      <span id="minimal-heading-pill" class="minimal-hud-heading">345° NNW • LEFT LANE</span>
-                      <span id="geiger-zone-title" class="geiger-zone-title">POTHOLE SCANNER ACTIVE</span>
                     </div>
-                    <span id="geiger-distance-readout" class="geiger-distance-readout">CLEAR</span>
-                  </div>
-                  <div class="geiger-bars">
-                    <div id="geiger-seg-1" class="geiger-seg lit-green"></div>
-                    <div id="geiger-seg-2" class="geiger-seg lit-green"></div>
-                    <div id="geiger-seg-3" class="geiger-seg"></div>
-                    <div id="geiger-seg-4" class="geiger-seg"></div>
-                    <div id="geiger-seg-5" class="geiger-seg"></div>
-                    <div id="geiger-seg-6" class="geiger-seg"></div>
-                    <div id="geiger-seg-7" class="geiger-seg"></div>
-                    <div id="geiger-seg-8" class="geiger-seg"></div>
-                    <div id="geiger-seg-9" class="geiger-seg"></div>
-                    <div id="geiger-seg-10" class="geiger-seg"></div>
-                  </div>
-                  <div class="control-row" style="justify-content:space-between;">
-                    <span id="geiger-detail-line" class="hud-metric-label" style="color:var(--text-secondary);">
-                      Scanning NZ Keep-Left Lane (±45° cone) • Opposite-lane potholes suppressed
-                    </span>
-                    <span id="hud-accuracy-val" class="hud-metric-label" style="color:var(--accent-green);">±4.1m</span>
-                  </div>
-                </div>
 
-                <!-- Top-Right Controls: Map Provider (Waze / Google / Sat / OSM) + 3D View Mode -->
-                <div class="map-corner-controls">
-                  <button id="btn-map-layer" class="btn btn-cyan map-corner-btn" title="Cycle Map Layer: Waze Dark, Google Satellite, OSM">🚗 WAZE DARK</button>
-                  <button id="btn-cycle-view" class="btn btn-amber map-corner-btn" title="Cycle 3D Cockpit / 2D Map / Dual View">🚘 3D COCKPIT</button>
-                </div>
-              </div>
+                    <div class="nav-hud-guidance-cluster">
+                      <div class="nav-hud-road-line">
+                        <span id="map-loc-text" class="nav-road-title">📍 LOCATING ROAD...</span>
+                        <span id="minimal-heading-pill" class="nav-heading-tag">345° NNW</span>
+                      </div>
+                      <div id="lane-guidance-instruction" class="nav-instruction-line">
+                        STAY IN LEFT LANE • ROAD CLEAR
+                      </div>
+                    </div>
 
-              <!-- GPS Lane Guidance HUD Banner (Waze / CarPlay Style) -->
-              <div id="lane-guidance-bar" class="lane-guidance-card floating-hud-card" aria-label="GPS Lane Guidance">
-                <div class="lane-guidance-top">
-                  <div class="lane-matrix" id="lane-guidance-matrix">
-                    <div class="lane-unit lane-left-active" id="lane-unit-left" title="NZ Left-Hand Lane (Active Driving Lane)">
-                      <span class="lane-unit-arrow">▲</span>
-                      <span class="lane-unit-label">LEFT</span>
-                      <span class="lane-unit-badge">KEEP LEFT</span>
-                    </div>
-                    <div class="lane-unit lane-center" id="lane-unit-center" title="Center / Passing Lane">
-                      <span class="lane-unit-arrow">▲</span>
-                      <span class="lane-unit-label">PASSING</span>
-                      <span class="lane-unit-badge">OVERTAKE</span>
-                    </div>
-                    <div class="lane-unit lane-opposing" id="lane-unit-opposing" title="Opposing Traffic Lane">
-                      <span class="lane-unit-arrow">▼</span>
-                      <span class="lane-unit-label">OPPOSING</span>
-                      <span class="lane-unit-badge">ONCOMING</span>
+                    <div class="nav-hud-status-cluster">
+                      <span id="geiger-distance-readout" class="geiger-distance-readout">CLEAR</span>
                     </div>
                   </div>
 
-                  <div class="lane-guidance-info">
-                    <div class="lane-guidance-status-row">
-                      <span id="lane-guidance-badge" class="lane-guidance-status-pill stat-ok">LANE CLEAR</span>
-                      <span id="lane-tactical-advisory" class="lane-guidance-advisory-pill">KEEP LEFT</span>
-                      <span id="lane-guidance-track-pill" class="lane-guidance-track-pill">LEFT WHEELTRACK</span>
+                  <!-- Engine Compatibility Elements (Hidden from view to eliminate bloat) -->
+                  <div class="engine-hidden-meta" aria-hidden="true" style="display:none !important;">
+                    <span id="lane-guidance-badge">LANE CLEAR</span>
+                    <span id="geiger-zone-title">POTHOLE SCANNER ACTIVE</span>
+                    <span id="geiger-detail-line">Scanning NZ Left-Hand Lane</span>
+                    <span id="hud-accuracy-val">±4.1m</span>
+                    <div id="lane-guidance-bar"></div>
+                    <div id="lane-guidance-matrix">
+                      <div id="lane-unit-left" class="lane-unit lane-left-active"></div>
+                      <div id="lane-unit-center" class="lane-unit lane-center"></div>
+                      <div id="lane-unit-opposing" class="lane-unit lane-opposing"></div>
                     </div>
-                    <div id="lane-guidance-instruction" class="lane-guidance-instruction">
-                      STAY IN LEFT LANE • ROAD CLEAR
-                    </div>
-                    <div id="lane-guidance-detail" class="lane-guidance-detail">
-                      NZ Road Code Rule 2.1: Drive on the left side of the road
+                    <span id="lane-tactical-advisory">KEEP LEFT</span>
+                    <span id="lane-guidance-track-pill">LEFT WHEELTRACK</span>
+                    <div id="lane-guidance-detail"></div>
+                    <div id="map-device-location-bar"><span id="map-loc-dot"></span></div>
+                    <div class="geiger-bars">
+                      <div id="geiger-seg-1"></div><div id="geiger-seg-2"></div><div id="geiger-seg-3"></div>
+                      <div id="geiger-seg-4"></div><div id="geiger-seg-5"></div><div id="geiger-seg-6"></div>
+                      <div id="geiger-seg-7"></div><div id="geiger-seg-8"></div><div id="geiger-seg-9"></div>
+                      <div id="geiger-seg-10"></div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Location & RAMM Road Corridor Glass Bar -->
-              <div id="map-device-location-bar" class="map-location-overlay" title="Tap to re-locate device GPS">
-                <span id="map-loc-dot" class="loc-pulse-dot"></span>
-                <span id="map-loc-text" class="nowrap">📍 LOCATING DEVICE...</span>
+              <!-- Floating Map Quick-Action Controls Dock (Right Side) -->
+              <div class="map-corner-controls">
+                <button id="btn-map-layer" class="btn map-corner-btn" title="Cycle Map Layer: Dark GPS, Satellite, Day, OSM">🚗</button>
+                <button id="btn-cycle-view" class="btn map-corner-btn" title="Toggle 3D Cockpit / 2D Map / Dual View">🚘</button>
               </div>
 
               <!-- 4-Second Pass-By Verification Banner -->
@@ -443,8 +417,8 @@
               <!-- Bottom Floating 1-Tap Action Dock -->
               <div class="one-tap-zone floating-action-dock">
                 <button id="btn-log-rim" class="btn-giant-log">
-                  <span id="btn-giant-title">💥 TAP TO LOG POTHOLE (LEFT LANE)</span>
-                  <span id="btn-giant-sub" class="btn-giant-sub">1.75s Reaction Lookback • Auto-Deduplicates ≤8m • NZ Left-Hand Lane</span>
+                  <span id="btn-giant-title">💥 REPORT POTHOLE (LEFT LANE)</span>
+                  <span id="btn-giant-sub" class="btn-giant-sub">Auto-Logged to NZ Council &amp; NZTA RAMM</span>
                 </button>
                 <button id="btn-log-bump" class="btn-secondary-log" title="Log Moderate Bump / Rut">
                   <span>⚠️ BUMP</span>
@@ -817,16 +791,16 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="./js/qrcode.min.js?v=2.4.0"></script>
-  <script src="./js/nz-councils.js?v=2.4.0"></script>
-  <script src="./js/db.js?v=2.4.0"></script>
-  <script src="./js/audio-radar.js?v=2.4.0"></script>
-  <script src="./js/geo-lane.js?v=2.4.0"></script>
-  <script src="./js/ui-core.js?v=2.4.0"></script>
-  <script src="./js/maps.js?v=2.4.0"></script>
-  <script src="./js/drive.js?v=2.4.0"></script>
-  <script src="./js/log.js?v=2.4.0"></script>
-  <script src="./js/report.js?v=2.4.0"></script>
-  <script src="./js/app.js?v=2.4.0"></script>
+  <script src="./js/qrcode.min.js?v=2.6.5"></script>
+  <script src="./js/nz-councils.js?v=2.6.5"></script>
+  <script src="./js/db.js?v=2.6.5"></script>
+  <script src="./js/audio-radar.js?v=2.6.5"></script>
+  <script src="./js/geo-lane.js?v=2.6.5"></script>
+  <script src="./js/ui-core.js?v=2.6.5"></script>
+  <script src="./js/maps.js?v=2.6.5"></script>
+  <script src="./js/drive.js?v=2.6.5"></script>
+  <script src="./js/log.js?v=2.6.5"></script>
+  <script src="./js/report.js?v=2.6.5"></script>
+  <script src="./js/app.js?v=2.6.5"></script>
 </body>
 </html>
