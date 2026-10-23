@@ -99,6 +99,10 @@ window.RimReaperApp = (function () {
 
     // Drive Simulator (Inside Settings Sheet & Desktop Side Panel)
     const toggleSimDrive = () => {
+      if (window.RimReaperDB.isFakeDataDisabled && window.RimReaperDB.isFakeDataDisabled()) {
+        showToast('Fake data & simulation disabled. Re-enable in Settings to run simulator.');
+        return;
+      }
       const corridor = el('sim-corridor-select') ? el('sim-corridor-select').value : 'SH1-DOME';
       const active = window.GeoLaneEngine.toggleDriveSimulation(corridor, () => {
         window.RimReaperDrive.refreshTelemetryAndHUD();
@@ -110,6 +114,75 @@ window.RimReaperApp = (function () {
       toggleSettingsSheet(false);
     };
     bind('btn-sim-drive', 'click', toggleSimDrive);
+
+    // Toggle All Fake Data (Pure Live Sensors Mode)
+    const updateFakeDataUI = (disabled) => {
+      const btn = el('btn-toggle-fake-data');
+      const badge = el('fake-data-badge');
+      const note = el('fake-data-status-note');
+      const simBtn = el('btn-sim-drive');
+
+      if (disabled) {
+        if (btn) {
+          btn.textContent = '🔄 RESTORE DEMO DATA & SIMULATOR';
+          btn.className = 'btn btn-cyan';
+        }
+        if (badge) {
+          badge.textContent = 'PURE REAL SENSORS';
+          badge.className = 'status-pill stat-fixed';
+        }
+        if (note) {
+          note.textContent = '✅ All fake data purged. Database and radar operate 100% on live device GPS fixes and hardware motion sensors.';
+        }
+        if (simBtn) {
+          simBtn.textContent = '⛔ SIMULATOR DISABLED';
+          simBtn.disabled = true;
+          simBtn.className = 'btn';
+        }
+      } else {
+        if (btn) {
+          btn.textContent = '🚫 TURN OFF ALL FAKE DATA (REAL SENSORS ONLY)';
+          btn.className = 'btn btn-danger';
+        }
+        if (badge) {
+          badge.textContent = 'DEMO DATA ACTIVE';
+          badge.className = 'status-pill stat-unreported';
+        }
+        if (note) {
+          note.textContent = 'Purges all 11 seed demo potholes, stops test drive simulation, and runs 100% on live physical GPS and motion sensors.';
+        }
+        if (simBtn) {
+          simBtn.textContent = '▶ SIMULATE NZ DRIVE';
+          simBtn.disabled = false;
+          simBtn.className = 'btn btn-success';
+        }
+      }
+    };
+
+    const toggleFakeData = async () => {
+      const isCurrentlyDisabled = window.RimReaperDB.isFakeDataDisabled();
+      if (isCurrentlyDisabled) {
+        await window.RimReaperDB.restoreFakeData();
+        window.GeoLaneEngine.setNoFakeDataMode(false);
+        updateFakeDataUI(false);
+        showToast('ℹ️ DEMO SEED HAZARDS & SIMULATOR RESTORED');
+      } else {
+        await window.RimReaperDB.purgeAllFakeData();
+        window.GeoLaneEngine.setNoFakeDataMode(true);
+        updateFakeDataUI(true);
+        showToast('🚫 ALL FAKE DATA PURGED — RUNNING 100% ON LIVE HARDWARE SENSORS');
+      }
+      window.RimReaperDrive.refreshTelemetryAndHUD();
+      if (window.RimReaperLog) window.RimReaperLog.renderLeagueTable();
+      if (window.RimReaperMaps) {
+        window.RimReaperMaps.updateRadarMap();
+        window.RimReaperMaps.renderReviewMapMarkers();
+      }
+    };
+    bind('btn-toggle-fake-data', 'click', toggleFakeData);
+    if (window.RimReaperDB.isFakeDataDisabled) {
+      updateFakeDataUI(window.RimReaperDB.isFakeDataDisabled());
+    }
 
     // 1-Tap Hazard Logging Buttons on Drive Screen
     bind('btn-log-rim', 'click', () => window.RimReaperDrive.handleQuickLog('Rim Bender', '1-Tap HUD'));

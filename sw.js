@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rim-reaper-nz-v2.2.0';
+const CACHE_NAME = 'rim-reaper-nz-v2.3.0';
 const TILE_CACHE_NAME = 'rim-reaper-nz-tiles-v1';
 
 const CORE_ASSETS = [

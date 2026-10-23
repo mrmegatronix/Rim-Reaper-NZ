@@ -121,6 +121,49 @@ window.RimReaperDB = (function () {
     });
   }
 
+  const LS_NO_FAKE_DATA_KEY = 'rim_reaper_no_fake_data';
+
+  function isFakeDataDisabled() {
+    return localStorage.getItem(LS_NO_FAKE_DATA_KEY) === 'true';
+  }
+
+  async function purgeAllFakeData() {
+    localStorage.setItem(LS_NO_FAKE_DATA_KEY, 'true');
+    const all = await getAllHazards();
+    const realHazards = all.filter((h) => !h.isSeed && !/^NZ-POT-10(0[1-9]|1[0-1])$/.test(h.id));
+    await saveAllHazards(realHazards);
+
+    const realStats = {
+      kmScanned: 0.0,
+      potholesLogged: realHazards.length,
+      confirmationsLogged: 0,
+      repairsConfirmed: realHazards.filter((h) => h.status === 'Fixed').length,
+      dashcamBookmarks: []
+    };
+    localStorage.setItem(LS_STATS_KEY, JSON.stringify(realStats));
+    broadcast('stats_updated', realStats);
+    broadcast('hazards_purged', { count: realHazards.length });
+    return realHazards;
+  }
+
+  async function restoreFakeData() {
+    localStorage.removeItem(LS_NO_FAKE_DATA_KEY);
+    const seedList = window.NZ_DATA.SEED_HAZARDS.map(enrichWithJurisdiction);
+    await saveAllHazards(seedList);
+
+    const initialStats = {
+      kmScanned: 428.6,
+      potholesLogged: 11,
+      confirmationsLogged: 42,
+      repairsConfirmed: 3,
+      dashcamBookmarks: []
+    };
+    localStorage.setItem(LS_STATS_KEY, JSON.stringify(initialStats));
+    broadcast('stats_updated', initialStats);
+    broadcast('hazards_restored', { count: seedList.length });
+    return seedList;
+  }
+
   async function getAllHazards() {
     const db = await openDB();
     let list = [];
@@ -140,8 +183,12 @@ window.RimReaperDB = (function () {
     }
 
     if (!list || list.length === 0) {
-      list = window.NZ_DATA.SEED_HAZARDS.map(enrichWithJurisdiction);
-      await saveAllHazards(list);
+      if (!isFakeDataDisabled()) {
+        list = window.NZ_DATA.SEED_HAZARDS.map(enrichWithJurisdiction);
+        await saveAllHazards(list);
+      } else {
+        list = [];
+      }
     }
 
     // 90-day auto-expiry check for unconfirmed stale records
@@ -281,6 +328,17 @@ window.RimReaperDB = (function () {
     } catch (e) {
       // fallback
     }
+    if (isFakeDataDisabled()) {
+      const real = {
+        kmScanned: 0.0,
+        potholesLogged: 0,
+        confirmationsLogged: 0,
+        repairsConfirmed: 0,
+        dashcamBookmarks: []
+      };
+      localStorage.setItem(LS_STATS_KEY, JSON.stringify(real));
+      return real;
+    }
     const initial = {
       kmScanned: 428.6,
       potholesLogged: 11,
@@ -360,6 +418,9 @@ window.RimReaperDB = (function () {
     addDashcamBookmark,
     exportBackupBundle,
     importBackupBundle,
+    isFakeDataDisabled,
+    purgeAllFakeData,
+    restoreFakeData,
     onUpdate,
     broadcast
   };

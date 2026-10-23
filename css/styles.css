@@ -1057,6 +1057,209 @@ h3,
   }
 }
 
+/* ==========================================================================
+   GPS Lane Guidance HUD Card (Waze / CarPlay Style)
+   ========================================================================== */
+.lane-guidance-card {
+  width: 100%;
+  max-width: 960px;
+  align-self: center;
+  margin: 4px 0 0 0;
+  padding: 6px 10px;
+  background: rgba(9, 9, 11, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.65), 0 0 10px rgba(0, 245, 140, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: auto;
+  z-index: 120;
+}
+
+.lane-guidance-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.lane-matrix {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.lane-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.lane-unit-arrow {
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.lane-unit-label {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+.lane-unit-badge {
+  font-size: 7px;
+  font-weight: 700;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+/* Active Left Lane */
+.lane-unit.lane-left-active {
+  background: rgba(0, 245, 140, 0.16);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  box-shadow: 0 0 10px rgba(0, 245, 140, 0.35);
+}
+
+.lane-unit.guidance-recommended {
+  background: rgba(0, 212, 255, 0.22);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.5);
+  transform: scale(1.04);
+}
+
+.lane-unit.hazard-alert-left,
+.lane-unit.hazard-alert-right {
+  background: rgba(255, 42, 42, 0.24);
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+  box-shadow: 0 0 12px rgba(255, 42, 42, 0.5);
+}
+
+.lane-unit.lane-opposing {
+  opacity: 0.45;
+  color: var(--text-secondary);
+  border-style: dashed;
+}
+
+.lane-guidance-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.lane-guidance-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.lane-guidance-status-pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.lane-guidance-status-pill.stat-ok {
+  background: rgba(0, 245, 140, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(0, 245, 140, 0.4);
+}
+
+.lane-guidance-status-pill.stat-warning {
+  background: rgba(255, 176, 0, 0.2);
+  color: var(--accent-amber);
+  border: 1px solid var(--accent-amber);
+}
+
+.lane-guidance-status-pill.stat-danger {
+  background: rgba(255, 42, 42, 0.25);
+  color: var(--accent-red);
+  border: 1px solid var(--accent-red);
+}
+
+.lane-guidance-advisory-pill {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(0, 212, 255, 0.12);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.lane-guidance-track-pill {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.lane-guidance-instruction {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.3px;
+}
+
+.lane-guidance-detail {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 680px) {
+  .lane-unit {
+    width: 36px;
+    height: 38px;
+  }
+  .lane-unit-arrow {
+    font-size: 12px;
+  }
+  .lane-unit-label {
+    font-size: 7px;
+  }
+  .lane-unit-badge {
+    display: none;
+  }
+  .lane-guidance-instruction {
+    font-size: 11px;
+  }
+  .lane-guidance-detail {
+    font-size: 9px;
+  }
+}
+
 .hud-floating-layer .map-location-overlay {
   position: static;
   align-self: center;

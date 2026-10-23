@@ -114,7 +114,22 @@
           </div>
         </div>
 
-        <!-- 3. Test Drive Simulator & Quick Defaults -->
+        <!-- 3. Test Mode, Fake Data Purge & Quick Defaults -->
+        <div class="nz-lane-diagram" id="card-fake-data-control" style="border:1px solid rgba(239, 68, 68, 0.45);background:rgba(239, 68, 68, 0.08);">
+          <div class="control-row" style="justify-content:space-between;align-items:center;">
+            <span class="hud-metric-label" style="color:var(--accent-red);font-weight:900;">🚫 REAL SENSORS ONLY (FAKE DATA PURGE)</span>
+            <span id="fake-data-badge" class="status-pill stat-unreported">DEMO DATA ACTIVE</span>
+          </div>
+          <div class="control-row" style="margin-top:6px;">
+            <button id="btn-toggle-fake-data" class="btn btn-danger" style="flex:1;font-weight:800;letter-spacing:0.5px;padding:10px 14px;">
+              🚫 TURN OFF ALL FAKE DATA (REAL SENSORS ONLY)
+            </button>
+          </div>
+          <div id="fake-data-status-note" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-top:5px;line-height:1.4;">
+            Purges all 11 seed demo potholes, stops test drive simulation, and runs 100% on live physical GPS and motion sensors.
+          </div>
+        </div>
+
         <div class="nz-lane-diagram">
           <span class="hud-metric-label" style="color:var(--accent-amber);">TEST MODE (NZ HIGHWAY SIMULATOR) &amp; LOG DEFAULTS</span>
           <div class="control-row">
@@ -368,6 +383,43 @@
                 <div class="map-corner-controls">
                   <button id="btn-map-layer" class="btn btn-cyan map-corner-btn" title="Cycle Map Layer: Waze Dark, Google Satellite, OSM">🚗 WAZE DARK</button>
                   <button id="btn-cycle-view" class="btn btn-amber map-corner-btn" title="Cycle 3D Cockpit / 2D Map / Dual View">🚘 3D COCKPIT</button>
+                </div>
+              </div>
+
+              <!-- GPS Lane Guidance HUD Banner (Waze / CarPlay Style) -->
+              <div id="lane-guidance-bar" class="lane-guidance-card floating-hud-card" aria-label="GPS Lane Guidance">
+                <div class="lane-guidance-top">
+                  <div class="lane-matrix" id="lane-guidance-matrix">
+                    <div class="lane-unit lane-left-active" id="lane-unit-left" title="NZ Left-Hand Lane (Active Driving Lane)">
+                      <span class="lane-unit-arrow">▲</span>
+                      <span class="lane-unit-label">LEFT</span>
+                      <span class="lane-unit-badge">KEEP LEFT</span>
+                    </div>
+                    <div class="lane-unit lane-center" id="lane-unit-center" title="Center / Passing Lane">
+                      <span class="lane-unit-arrow">▲</span>
+                      <span class="lane-unit-label">PASSING</span>
+                      <span class="lane-unit-badge">OVERTAKE</span>
+                    </div>
+                    <div class="lane-unit lane-opposing" id="lane-unit-opposing" title="Opposing Traffic Lane">
+                      <span class="lane-unit-arrow">▼</span>
+                      <span class="lane-unit-label">OPPOSING</span>
+                      <span class="lane-unit-badge">ONCOMING</span>
+                    </div>
+                  </div>
+
+                  <div class="lane-guidance-info">
+                    <div class="lane-guidance-status-row">
+                      <span id="lane-guidance-badge" class="lane-guidance-status-pill stat-ok">LANE CLEAR</span>
+                      <span id="lane-tactical-advisory" class="lane-guidance-advisory-pill">KEEP LEFT</span>
+                      <span id="lane-guidance-track-pill" class="lane-guidance-track-pill">LEFT WHEELTRACK</span>
+                    </div>
+                    <div id="lane-guidance-instruction" class="lane-guidance-instruction">
+                      STAY IN LEFT LANE • ROAD CLEAR
+                    </div>
+                    <div id="lane-guidance-detail" class="lane-guidance-detail">
+                      NZ Road Code Rule 2.1: Drive on the left side of the road
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -765,16 +817,16 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="./js/qrcode.min.js?v=2.2.0"></script>
-  <script src="./js/nz-councils.js?v=2.2.0"></script>
-  <script src="./js/db.js?v=2.2.0"></script>
-  <script src="./js/audio-radar.js?v=2.2.0"></script>
-  <script src="./js/geo-lane.js?v=2.2.0"></script>
-  <script src="./js/ui-core.js?v=2.2.0"></script>
-  <script src="./js/maps.js?v=2.2.0"></script>
-  <script src="./js/drive.js?v=2.2.0"></script>
-  <script src="./js/log.js?v=2.2.0"></script>
-  <script src="./js/report.js?v=2.2.0"></script>
-  <script src="./js/app.js?v=2.2.0"></script>
+  <script src="./js/qrcode.min.js?v=2.3.0"></script>
+  <script src="./js/nz-councils.js?v=2.3.0"></script>
+  <script src="./js/db.js?v=2.3.0"></script>
+  <script src="./js/audio-radar.js?v=2.3.0"></script>
+  <script src="./js/geo-lane.js?v=2.3.0"></script>
+  <script src="./js/ui-core.js?v=2.3.0"></script>
+  <script src="./js/maps.js?v=2.3.0"></script>
+  <script src="./js/drive.js?v=2.3.0"></script>
+  <script src="./js/log.js?v=2.3.0"></script>
+  <script src="./js/report.js?v=2.3.0"></script>
+  <script src="./js/app.js?v=2.3.0"></script>
 </body>
 </html>

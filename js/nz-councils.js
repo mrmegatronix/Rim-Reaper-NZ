@@ -289,6 +289,7 @@ window.NZ_DATA = (function () {
   const SEED_HAZARDS = [
     {
       id: 'NZ-POT-1001',
+      isSeed: true,
       lat: -36.3642,
       lon: 174.6214,
       heading: 345,

@@ -413,7 +413,7 @@ window.RimReaperMaps = (function () {
     });
   }
 
-  function focusDeviceLocationOnMap(openPopup = true, forceSplit = false) {
+  function focusDeviceLocationOnMap(openPopup = false, forceSplit = false) {
     const t = window.GeoLaneEngine.getState();
     const splitWrap = el('radar-display-split');
     if (splitWrap && (forceSplit || splitWrap.classList.contains('mode-scope-only'))) {

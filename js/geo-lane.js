@@ -496,6 +496,29 @@ window.GeoLaneEngine = (function () {
     );
   }
 
+  function isFakeDataDisabled() {
+    return typeof window.RimReaperDB !== 'undefined' && window.RimReaperDB.isFakeDataDisabled
+      ? window.RimReaperDB.isFakeDataDisabled()
+      : localStorage.getItem('rim_reaper_no_fake_data') === 'true';
+  }
+
+  function setNoFakeDataMode(disabled) {
+    if (disabled) {
+      if (simTimer) {
+        clearInterval(simTimer);
+        simTimer = null;
+      }
+      state.isSimulating = false;
+      if (!state.hasRealGps) {
+        state.speedKmh = 0;
+        state.isMoving = false;
+        state.roadName = 'Awaiting Live GPS Signal...';
+        state.placeLabel = 'Searching GPS Satellites...';
+      }
+    }
+    if (typeof telemetryCallback === 'function') telemetryCallback(state);
+  }
+
   /**
    * Built-In NZ Highway Telemetry Simulator so users can test approaching alerts,
    * 10 km/h safety lock-out, and pass-by verification immediately.
@@ -504,6 +527,14 @@ window.GeoLaneEngine = (function () {
     if (simTimer) {
       clearInterval(simTimer);
       simTimer = null;
+      state.isSimulating = false;
+      state.speedKmh = 0;
+      state.isMoving = false;
+      if (typeof onTick === 'function') onTick(state);
+      return false;
+    }
+
+    if (isFakeDataDisabled()) {
       state.isSimulating = false;
       state.speedKmh = 0;
       state.isMoving = false;
@@ -583,6 +614,8 @@ window.GeoLaneEngine = (function () {
     locateMeNow,
     toggleDriveSimulation,
     setManualTelemetry,
-    markGracePeriod
+    markGracePeriod,
+    setNoFakeDataMode,
+    isFakeDataDisabled
   };
 })();

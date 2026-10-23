@@ -332,7 +332,91 @@ window.RimReaperDrive = (function () {
       showView(0, true);
     }
 
+    updateApproachingAlerts();
+  }
+
+  function updateLaneGuidance(scan, t) {
+    const unitLeft = el('lane-unit-left');
+    const unitCenter = el('lane-unit-center');
+    const unitOpposing = el('lane-unit-opposing');
+    const badge = el('lane-guidance-badge');
+    const advisory = el('lane-tactical-advisory');
+    const trackPill = el('lane-guidance-track-pill');
+    const instruction = el('lane-guidance-instruction');
+    const detail = el('lane-guidance-detail');
+
+    if (!unitLeft || !instruction) return;
+
+    // Reset lane units
+    unitLeft.className = 'lane-unit lane-left-active';
+    if (unitCenter) unitCenter.className = 'lane-unit lane-center';
+    if (unitOpposing) unitOpposing.className = 'lane-unit lane-opposing';
+
+    if (scan && scan.nearest) {
+      const h = scan.nearest;
+      const dist = h.distanceM || Math.round(window.NZ_DATA.haversineMeters(t.lat, t.lon, h.lat, h.lon));
+      const trk = h.wheelTrack || '';
+      const sev = (h.severity || 'Hazard').toUpperCase();
+      const isLeftTrack = trk.includes('Left Wheel');
+      const isRightTrack = trk.includes('Right Wheel');
+      const isSlip = Boolean(h.hazardType && h.hazardType.includes('Slip'));
+
+      if (isLeftTrack) {
+        // Pothole on verge / left wheel track -> advise driver to bias right inside lane
+        unitLeft.classList.add('hazard-alert-left');
+        if (unitCenter) unitCenter.classList.add('guidance-recommended');
+
+        if (badge) {
+          badge.textContent = dist <= 60 ? '⚠️ BIAS RIGHT IN LANE' : '⚠️ WATCH LEFT VERGE';
+          badge.className = h.severity === 'Rim Bender' ? 'lane-guidance-status-pill stat-danger' : 'lane-guidance-status-pill stat-warning';
+        }
+        if (advisory) advisory.textContent = 'BIAS CENTER-RIGHT';
+        if (trackPill) trackPill.textContent = 'POTHOLE: LEFT TRACK';
+        instruction.textContent = `${sev} ON LEFT VERGE (${dist}m) — BIAS RIGHT IN LANE`;
+        if (detail) detail.textContent = 'Keep within left carriageway but bias right of lane to clear rim-bender crater.';
+      } else if (isRightTrack) {
+        // Pothole on centerline / right track -> advise driver to hug left verge
+        unitLeft.classList.add('guidance-recommended');
+        if (unitCenter) unitCenter.classList.add('hazard-alert-right');
+
+        if (badge) {
+          badge.textContent = dist <= 60 ? '⚠️ HUG LEFT VERGE' : '⚠️ WATCH CENTERLINE';
+          badge.className = h.severity === 'Rim Bender' ? 'lane-guidance-status-pill stat-danger' : 'lane-guidance-status-pill stat-warning';
+        }
+        if (advisory) advisory.textContent = 'HUG VERGE';
+        if (trackPill) trackPill.textContent = 'POTHOLE: RIGHT TRACK';
+        instruction.textContent = `${sev} ON CENTERLINE TRACK (${dist}m) — HUG LEFT VERGE`;
+        if (detail) detail.textContent = 'Keep left near verge to avoid centerline defect and oncoming traffic draft.';
+      } else {
+        // Center lane / both tracks / slip
+        unitLeft.classList.add('guidance-recommended');
+
+        if (badge) {
+          badge.textContent = isSlip ? '⛔ SLIP / DROPOUT AHEAD' : '⛔ CENTER DEFECT';
+          badge.className = 'lane-guidance-status-pill stat-danger';
+        }
+        if (advisory) advisory.textContent = 'REDUCE SPEED';
+        if (trackPill) trackPill.textContent = isSlip ? 'ROAD DROPOUT' : 'CENTER CRATER';
+        instruction.textContent = `${h.hazardType || 'POTHOLE'} AHEAD (${dist}m) — REDUCE SPEED & STRADDLE`;
+        if (detail) detail.textContent = 'Full carriageway impact risk. Slow down and maintain directional control.';
+      }
+    } else {
+      // Clear road cruise
+      if (badge) {
+        badge.textContent = '🟢 LANE CLEAR';
+        badge.className = 'lane-guidance-status-pill stat-ok';
+      }
+      if (advisory) advisory.textContent = 'KEEP LEFT';
+      if (trackPill) trackPill.textContent = `${t.wheelTrack ? t.wheelTrack.replace(/ \(.*\)/, '') : 'LEFT VERGE'}`;
+      instruction.textContent = `STAY IN LEFT LANE • ${t.speedLimitKmh || 100} KM/H CRUISE`;
+      if (detail) detail.textContent = `${t.cardinal}-Bound ${t.roadName || 'Road Corridor'} • NZ Rule 2.1: Drive on the left`;
+    }
+  }
+
+  function updateApproachingAlerts() {
+    const t = window.GeoLaneEngine.getState();
     const scan = window.GeoLaneEngine.scanApproachingHazards(state.cachedHazards);
+
     const banner = el('geiger-banner');
     const zoneTitle = el('geiger-zone-title');
     const distReadout = el('geiger-distance-readout');
@@ -391,6 +475,8 @@ window.RimReaperDrive = (function () {
       updateGeigerSegments(0);
     }
 
+    updateLaneGuidance(scan, t);
+
     if (window.RimReaperMaps) window.RimReaperMaps.updateRadarMap();
     renderApproachingMiniList(scan.approachingList);
     renderDriverStatsBar();
@@ -424,7 +510,39 @@ window.RimReaperDrive = (function () {
       const splitWrap = el('radar-display-split');
       const is3dCockpit = splitWrap && splitWrap.classList.contains('mode-3d-cockpit');
 
-      if (!is3dCockpit) {
+      if (is3dCockpit) {
+        // Dynamic Lane Guidance Trajectory Beam in 3D Cockpit
+        const scan = window.GeoLaneEngine.scanApproachingHazards(state.cachedHazards);
+        let laneBiasX = 0;
+        let alertLabel = '';
+        if (scan && scan.nearest && scan.nearest.distanceM <= 350) {
+          if (scan.nearest.wheelTrack && scan.nearest.wheelTrack.includes('Left Wheel')) {
+            laneBiasX = w * 0.09; // Bias right in lane
+            alertLabel = '⤹ BIAS RIGHT';
+          } else if (scan.nearest.wheelTrack && scan.nearest.wheelTrack.includes('Right Wheel')) {
+            laneBiasX = -w * 0.07; // Hug verge
+            alertLabel = '⤸ HUG VERGE';
+          }
+        }
+
+        const guideY1 = h * 0.65;
+        const guideY2 = h * 0.94;
+        const startX = cx - (w * 0.16);
+        const endX = cx - (w * 0.06) + laneBiasX;
+
+        ctx.strokeStyle = laneBiasX !== 0 ? 'rgba(0, 212, 255, 0.75)' : 'rgba(0, 245, 140, 0.45)';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(startX, guideY2);
+        ctx.quadraticCurveTo(startX + (endX - startX) * 0.6, (guideY1 + guideY2) * 0.5, endX, guideY1);
+        ctx.stroke();
+
+        if (alertLabel) {
+          ctx.fillStyle = '#00d4ff';
+          ctx.font = 'bold 11px monospace';
+          ctx.fillText(alertLabel, endX - 35, guideY1 - 8);
+        }
+      } else {
         ctx.fillStyle = 'rgba(0, 245, 140, 0.09)';
         ctx.beginPath();
         ctx.moveTo(cx - topHalfW, horizonY);
