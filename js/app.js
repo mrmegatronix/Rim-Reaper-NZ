@@ -83,7 +83,7 @@ window.RimReaperApp = (function () {
       showToast('Locking onto Real Device Location & Motion Sensors...');
       window.GeoLaneEngine.locateMeNow((res) => {
         if (res && res.ok) {
-          window.RimReaperMaps.focusDeviceLocationOnMap(true);
+          window.RimReaperMaps.focusDeviceLocationOnMap(false);
           showToast(
             `📍 DEVICE LOCATED: ${res.state.placeLabel || res.state.roadName} (${res.state.lat.toFixed(5)}, ${res.state.lon.toFixed(5)})`
           );
@@ -165,11 +165,17 @@ window.RimReaperApp = (function () {
         await window.RimReaperDB.restoreFakeData();
         window.GeoLaneEngine.setNoFakeDataMode(false);
         updateFakeDataUI(false);
+        if (window.AudioRadar && window.AudioRadar.speakAnnouncement) {
+          window.AudioRadar.speakAnnouncement('Demo hazards and simulator restored.');
+        }
         showToast('ℹ️ DEMO SEED HAZARDS & SIMULATOR RESTORED');
       } else {
         await window.RimReaperDB.purgeAllFakeData();
         window.GeoLaneEngine.setNoFakeDataMode(true);
         updateFakeDataUI(true);
+        if (window.AudioRadar && window.AudioRadar.speakAnnouncement) {
+          window.AudioRadar.speakAnnouncement('Pure sensor mode active. Fake data purged.');
+        }
         showToast('🚫 ALL FAKE DATA PURGED — RUNNING 100% ON LIVE HARDWARE SENSORS');
       }
       window.RimReaperDrive.refreshTelemetryAndHUD();
@@ -207,6 +213,9 @@ window.RimReaperApp = (function () {
       if (el('btn-copilot-toggle')) {
         el('btn-copilot-toggle').textContent = state.coPilotUnlocked ? 'CO-PILOT: UNLOCKED' : 'CO-PILOT: LOCKED';
         el('btn-copilot-toggle').className = state.coPilotUnlocked ? 'btn btn-success' : 'btn';
+      }
+      if (window.AudioRadar && window.AudioRadar.speakAnnouncement) {
+        window.AudioRadar.speakAnnouncement(state.coPilotUnlocked ? 'Co-pilot unlocked.' : 'Co-pilot locked.');
       }
       window.RimReaperDrive.refreshTelemetryAndHUD();
     });

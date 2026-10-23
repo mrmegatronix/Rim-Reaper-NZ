@@ -192,6 +192,9 @@ window.RimReaperMaps = (function () {
     if (statusEl) {
       statusEl.textContent = `✅ ${downloaded} tiles cached for ${t.placeLabel || t.roadName}. 100% offline ready!`;
     }
+    if (window.AudioRadar && window.AudioRadar.speakAnnouncement) {
+      window.AudioRadar.speakAnnouncement('Corridor tiles cached. 100 percent offline navigation ready.');
+    }
     showToast(`✅ ${downloaded} OFFLINE TILES SAVED TO PHONE MEMORY!`);
   }
 

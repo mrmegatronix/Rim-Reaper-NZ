@@ -19,7 +19,7 @@ window.RimReaperDrive = (function () {
     if (splashEl) splashEl.classList.add('hidden-splash');
 
     setTimeout(() => {
-      if (window.RimReaperMaps) window.RimReaperMaps.focusDeviceLocationOnMap(true, true);
+      if (window.RimReaperMaps) window.RimReaperMaps.focusDeviceLocationOnMap(false, true);
       const t = window.GeoLaneEngine.getState();
       showToast(`🚘 3D COCKPIT ACTIVE: ${t.placeLabel || t.roadName} (${t.lat.toFixed(4)}, ${t.lon.toFixed(4)})`);
     }, 120);
@@ -30,7 +30,7 @@ window.RimReaperDrive = (function () {
     window.GeoLaneEngine.requestMobileHardwarePermissions();
     window.GeoLaneEngine.locateMeNow((res) => {
       if (res && res.ok && window.RimReaperMaps) {
-        window.RimReaperMaps.focusDeviceLocationOnMap(true, true);
+        window.RimReaperMaps.focusDeviceLocationOnMap(false, true);
       }
       if (res && res.httpsRequired && el('btn-https-switch')) {
         el('btn-https-switch').style.display = 'inline-flex';
@@ -42,8 +42,8 @@ window.RimReaperDrive = (function () {
       splashEl.classList.remove('hidden-splash');
     }
 
-    // 15-Second Automatic Boot Countdown & Progress Bar
-    const totalSec = 15;
+    // 10-Second Automatic Boot Countdown & Progress Bar
+    const totalSec = 10;
     let remainingSec = totalSec;
     if (splashCountdownInterval) clearInterval(splashCountdownInterval);
 
@@ -162,6 +162,9 @@ window.RimReaperDrive = (function () {
     if (el('review-photo-box')) el('review-photo-box').style.display = 'none';
 
     window.AudioRadar.playLogConfirmationTone(severity);
+    if (window.AudioRadar.speakAnnouncement) {
+      window.AudioRadar.speakAnnouncement(`${severity} logged. Council notified.`);
+    }
     window.GeoLaneEngine.markGracePeriod(result.record.id);
 
     await window.RimReaperDB.addDashcamBookmark({
@@ -222,6 +225,9 @@ window.RimReaperDrive = (function () {
         status: 'Fixed',
         fixedAt: Date.now()
       });
+      if (window.AudioRadar && window.AudioRadar.speakAnnouncement) {
+        window.AudioRadar.speakAnnouncement('Pothole marked fixed. Database updated.');
+      }
       showToast(`MARKED ${state.passByPromptHazardId} AS FIXED!`);
     } else {
       const target = state.cachedHazards.find((h) => h.id === state.passByPromptHazardId);
@@ -230,6 +236,9 @@ window.RimReaperDrive = (function () {
           confirmations: Number(target.confirmations || 1) + 1,
           lastConfirmedAt: Date.now()
         });
+        if (window.AudioRadar && window.AudioRadar.speakAnnouncement) {
+          window.AudioRadar.speakAnnouncement('Hazard confirmed still present.');
+        }
         showToast(`CONFIRMED ${state.passByPromptHazardId} STILL THERE (+1 Confirmation)`);
       }
     }
@@ -458,10 +467,29 @@ window.RimReaperDrive = (function () {
 
       updateGeigerSegments(alertInfo.level * 2);
 
+      if (window.AudioRadar && window.AudioRadar.speakAnnouncement && scan.nearest.distanceM <= 280) {
+        const h = scan.nearest;
+        const isLeft = Boolean(h.wheelTrack && h.wheelTrack.includes('Left Wheel'));
+        const advice = isLeft ? 'Steer right.' : 'Hug verge.';
+        if (h.severity === 'Rim Bender' && (!state.lastSpokenHazardId || state.lastSpokenHazardId !== h.id)) {
+          state.lastSpokenHazardId = h.id;
+          window.AudioRadar.speakAnnouncement(`Caution. Rim Bender ahead in ${isLeft ? 'left track' : 'centerline track'}. ${advice}`);
+        } else if (h.hazardType && h.hazardType.includes('Slip') && (!state.lastSpokenHazardId || state.lastSpokenHazardId !== h.id)) {
+          state.lastSpokenHazardId = h.id;
+          window.AudioRadar.speakAnnouncement(`Alert. Road slip ahead. Reduce speed.`);
+        } else if (scan.isCluster && (!state.lastSpokenClusterTime || Date.now() - state.lastSpokenClusterTime > 25000)) {
+          state.lastSpokenClusterTime = Date.now();
+          window.AudioRadar.speakAnnouncement('Warning. Degraded road surface. Crater cluster ahead.');
+        }
+      }
+
       if (scan.nearest.distanceM <= 38 && state.passByPromptHazardId !== scan.nearest.id) {
         triggerPassByPrompt(scan.nearest);
       }
     } else {
+      if (state.lastSpokenHazardId) {
+        state.lastSpokenHazardId = null;
+      }
       if (banner) banner.className = 'geiger-alert-banner';
       if (zoneTitle) zoneTitle.textContent = 'POTHOLE SCANNER ACTIVE — CLEAR CORRIDOR AHEAD';
       if (distReadout) distReadout.textContent = 'CLEAR';

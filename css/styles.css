@@ -205,28 +205,28 @@ h3,
 
 .boot-splash-card {
   width: 100%;
-  max-width: 520px;
-  background: hsl(var(--card) / 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid hsl(var(--border));
+  max-width: 600px;
+  background: hsl(var(--card) / 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 2px solid rgba(255, 176, 0, 0.45);
   border-radius: var(--radius-xl);
-  padding: 24px 20px;
+  padding: 28px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  box-shadow: 0 25px 65px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(239, 68, 68, 0.2);
+  gap: 16px;
+  box-shadow: 0 25px 75px -10px rgba(0, 0, 0, 0.95), 0 0 50px rgba(245, 158, 11, 0.25);
   text-align: center;
 }
 
 .boot-splash-logo {
-  width: clamp(210px, 58vw, 300px);
-  height: clamp(210px, 58vw, 300px);
-  border-radius: 24px;
+  width: clamp(260px, 72vw, 380px);
+  height: clamp(260px, 72vw, 380px);
+  border-radius: 28px;
   object-fit: cover;
-  border: 2px solid hsl(var(--border));
-  box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.9), 0 0 32px rgba(245, 158, 11, 0.25);
+  border: 3px solid rgba(255, 176, 0, 0.5);
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.95), 0 0 40px rgba(245, 158, 11, 0.35);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -237,18 +237,19 @@ h3,
 
 .boot-splash-title {
   font-family: var(--font-mono);
-  font-size: 25px;
+  font-size: clamp(28px, 6.8vw, 40px);
   font-weight: 900;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
   color: var(--text-primary);
+  text-shadow: 0 0 24px rgba(255, 176, 0, 0.3);
 }
 
 .boot-splash-sub {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: clamp(12.5px, 3.4vw, 16px);
   font-weight: 800;
   color: var(--accent-amber);
-  letter-spacing: 0.7px;
+  letter-spacing: 1px;
 }
 
 .splash-channel-labels {
@@ -315,22 +316,25 @@ h3,
 
 .splash-countdown-text {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 900;
   color: var(--accent-amber);
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
 }
 
 .splash-status-text {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 14.5px;
   font-weight: 800;
   color: var(--accent-cyan);
 }
 
 .splash-boot-btn {
   width: 100%;
-  min-height: 62px;
+  min-height: 68px;
+  font-size: 17px;
+  font-weight: 900;
+  border-radius: var(--radius-lg);
 }
 
 /* ==========================================================================
@@ -487,42 +491,43 @@ h3,
   left: 0;
   right: 0;
   width: 100vw;
-  height: calc(56px + env(safe-area-inset-bottom, 0px));
-  padding: 5px 8px calc(5px + env(safe-area-inset-bottom, 0px));
+  height: calc(64px + env(safe-area-inset-bottom, 0px));
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
   background: rgba(7, 11, 17, 0.98);
   border-top: 2px solid var(--border-bright);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  gap: 8px;
   z-index: 1500;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.8);
 }
 
 .nav-tab {
   background: transparent;
   color: var(--text-secondary);
   border: none;
-  padding: 6px 4px;
-  border-radius: 6px;
+  padding: 8px 4px;
+  border-radius: 8px;
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
+  transition: all 0.15s ease;
 }
 
 .nav-tab-icon {
-  font-size: 16px;
+  font-size: 19px;
   line-height: 1;
 }
 
 .nav-tab-label {
-  font-size: 10px;
-  letter-spacing: 0.5px;
+  font-size: 11px;
+  letter-spacing: 0.6px;
   white-space: nowrap;
 }
 
@@ -666,24 +671,26 @@ h3,
 
 .geiger-zone-title {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
   color: var(--text-primary);
+  letter-spacing: 0.5px;
 }
 
 .geiger-distance-readout {
   font-family: var(--font-mono);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 900;
   color: var(--accent-amber);
   flex-shrink: 0;
+  text-shadow: 0 0 10px rgba(255, 176, 0, 0.4);
 }
 
 .geiger-bars {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   gap: 5px;
-  height: 26px;
+  height: 28px;
 }
 
 .geiger-seg {
@@ -700,32 +707,34 @@ h3,
 .minimal-hud-speed {
   display: inline-flex;
   align-items: baseline;
-  gap: 3px;
+  gap: 4px;
   background: #060b12;
   border: 2px solid var(--accent-green);
-  border-radius: 7px;
-  padding: 2px 8px;
+  border-radius: 8px;
+  padding: 3px 10px;
   font-family: var(--font-mono);
-  font-size: 19px;
+  font-size: 26px;
   font-weight: 900;
   color: var(--accent-green);
   flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(0, 245, 140, 0.25);
 }
 
 .minimal-hud-speed small {
-  font-size: 9.5px;
-  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .minimal-hud-heading {
   display: inline-flex;
   align-items: center;
-  background: rgba(0, 212, 255, 0.14);
-  border: 1px solid var(--accent-cyan);
+  background: rgba(0, 212, 255, 0.16);
+  border: 1.5px solid var(--accent-cyan);
   border-radius: 6px;
-  padding: 3px 7px;
+  padding: 4px 8px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   color: var(--accent-cyan);
   flex-shrink: 0;
@@ -1046,6 +1055,60 @@ h3,
 }
 
 @media (max-width: 680px) {
+  .top-bar {
+    padding: 4px 8px;
+    gap: 6px;
+  }
+  .brand-cluster {
+    flex-shrink: 0;
+    min-width: max-content;
+  }
+  .brand-title {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .top-controls {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  #btn-install-pwa,
+  #btn-open-share {
+    padding: 4px 7px;
+    font-size: 12px;
+    letter-spacing: 0;
+    min-height: 32px;
+  }
+  #btn-open-settings {
+    padding: 4px 8px;
+    font-size: 13px;
+    min-height: 32px;
+  }
+  .hud-clock {
+    font-size: 11px;
+    padding: 4px 6px;
+    letter-spacing: 0;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .btn-lbl {
+    display: none;
+  }
+  .geiger-zone-title {
+    display: none;
+  }
+  .minimal-hud-heading {
+    max-width: 125px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11.5px;
+    padding: 3px 5px;
+  }
+  .geiger-distance-readout {
+    font-size: 17px;
+  }
   .hud-top-bar {
     flex-direction: column;
     align-items: stretch;
@@ -1175,64 +1238,66 @@ h3,
 
 .lane-guidance-status-pill {
   font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 800;
-  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 2px 8px;
   border-radius: 9999px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 
 .lane-guidance-status-pill.stat-ok {
-  background: rgba(0, 245, 140, 0.15);
+  background: rgba(0, 245, 140, 0.18);
   color: var(--accent-green);
-  border: 1px solid rgba(0, 245, 140, 0.4);
+  border: 1px solid rgba(0, 245, 140, 0.45);
 }
 
 .lane-guidance-status-pill.stat-warning {
-  background: rgba(255, 176, 0, 0.2);
+  background: rgba(255, 176, 0, 0.22);
   color: var(--accent-amber);
   border: 1px solid var(--accent-amber);
 }
 
 .lane-guidance-status-pill.stat-danger {
-  background: rgba(255, 42, 42, 0.25);
+  background: rgba(255, 42, 42, 0.28);
   color: var(--accent-red);
   border: 1px solid var(--accent-red);
 }
 
 .lane-guidance-advisory-pill {
   font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 7px;
   border-radius: 4px;
-  background: rgba(0, 212, 255, 0.12);
+  background: rgba(0, 212, 255, 0.16);
   color: var(--accent-cyan);
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  border: 1px solid rgba(0, 212, 255, 0.4);
 }
 
 .lane-guidance-track-pill {
   font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--text-secondary);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #cbd5e1;
   white-space: nowrap;
 }
 
 .lane-guidance-instruction {
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
 }
 
 .lane-guidance-detail {
-  font-size: 10px;
+  font-size: 12px;
+  font-weight: 700;
   font-family: var(--font-mono);
-  color: var(--text-secondary);
+  color: #cbd5e1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1240,23 +1305,23 @@ h3,
 
 @media (max-width: 680px) {
   .lane-unit {
-    width: 36px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
   }
   .lane-unit-arrow {
-    font-size: 12px;
+    font-size: 16px;
   }
   .lane-unit-label {
-    font-size: 7px;
+    font-size: 8.5px;
   }
   .lane-unit-badge {
     display: none;
   }
   .lane-guidance-instruction {
-    font-size: 11px;
+    font-size: 13.5px;
   }
   .lane-guidance-detail {
-    font-size: 9px;
+    font-size: 11px;
   }
 }
 
@@ -1398,20 +1463,20 @@ body.tile-mode-satellite .leaflet-tile-pane,
   background: linear-gradient(180deg, #ff3333 0%, #b80000 100%);
   color: #ffffff;
   border: 2px solid #ff8080;
-  border-radius: 10px;
-  padding: 10px 12px;
-  min-height: 58px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-height: 64px;
   font-family: var(--font-mono);
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 900;
-  letter-spacing: 0.7px;
+  letter-spacing: 0.8px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  box-shadow: 0 0 20px var(--accent-red-glow);
+  gap: 3px;
+  box-shadow: 0 0 24px var(--accent-red-glow);
 }
 
 .btn-giant-log:active {
@@ -1419,20 +1484,21 @@ body.tile-mode-satellite .leaflet-tile-pane,
 }
 
 .btn-giant-sub {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   color: #ffd6d6;
+  letter-spacing: 0.5px;
 }
 
 .btn-secondary-log {
   background: linear-gradient(180deg, #212f45 0%, #131c2b 100%);
   color: var(--accent-amber);
-  border: 1px solid var(--accent-amber);
-  border-radius: 8px;
-  padding: 8px 6px;
-  min-height: 42px;
+  border: 1.5px solid var(--accent-amber);
+  border-radius: 10px;
+  padding: 10px 8px;
+  min-height: 48px;
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 13.5px;
   font-weight: 800;
   cursor: pointer;
   display: flex;

@@ -68,14 +68,14 @@ window.AudioRadar = (function () {
     clearBootTimers();
     ensureContext();
     const steps = [
-      { band: 'CRATER', label: 'CHECKING RIM-BENDER CRATER SENSOR...', delayMs: 0, freq: 880, dur: 180, type: 'sawtooth' },
-      { band: 'BUMP', label: 'CALIBRATING Z-AXIS SUSPENSION G-FORCE...', delayMs: 1750, freq: 1180, dur: 180, type: 'sawtooth' },
-      { band: 'RUT', label: 'LOADING WHEEL-TRACK RUT FILTER...', delayMs: 3500, freq: 1480, dur: 180, type: 'sawtooth' },
-      { band: 'SLIP', label: 'SCANNING WASHOUT & SLIP CORRIDORS...', delayMs: 5250, freq: 1860, dur: 190, type: 'square' },
-      { band: 'BRIDGE', label: 'VERIFYING ONE-LANE & BRIDGE DECK DB...', delayMs: 7000, freq: 2350, dur: 170, type: 'square' },
-      { band: 'WET', label: 'ARMING WATER-FILLED CRATER ALERTS...', delayMs: 8750, freq: 2950, dur: 170, type: 'square' },
-      { band: 'GPS', label: 'LOCKING NZ KEEP-LEFT LANE VECTOR (±45°)...', delayMs: 10500, freq: 1980, dur: 200, type: 'triangle' },
-      { band: 'NZTA', label: '67 NZ COUNCILS + WAKA KOTAHI RAMM READY...', delayMs: 12250, freq: 2640, dur: 260, type: 'sine' }
+      { band: 'CRATER', label: 'CHECKING RIM-BENDER CRATER SENSOR...', delayMs: 0, freq: 880, dur: 160, type: 'sawtooth' },
+      { band: 'BUMP', label: 'CALIBRATING Z-AXIS SUSPENSION G-FORCE...', delayMs: 1100, freq: 1180, dur: 160, type: 'sawtooth' },
+      { band: 'RUT', label: 'LOADING WHEEL-TRACK RUT FILTER...', delayMs: 2200, freq: 1480, dur: 160, type: 'sawtooth' },
+      { band: 'SLIP', label: 'SCANNING WASHOUT & SLIP CORRIDORS...', delayMs: 3300, freq: 1860, dur: 170, type: 'square' },
+      { band: 'BRIDGE', label: 'VERIFYING ONE-LANE & BRIDGE DECK DB...', delayMs: 4400, freq: 2350, dur: 160, type: 'square' },
+      { band: 'WET', label: 'ARMING WATER-FILLED CRATER ALERTS...', delayMs: 5500, freq: 2950, dur: 160, type: 'square' },
+      { band: 'GPS', label: 'LOCKING NZ KEEP-LEFT LANE VECTOR (±45°)...', delayMs: 6600, freq: 1980, dur: 180, type: 'triangle' },
+      { band: 'NZTA', label: '67 NZ COUNCILS + WAKA KOTAHI RAMM READY...', delayMs: 7700, freq: 2640, dur: 220, type: 'sine' }
     ];
 
     steps.forEach((step) => {
@@ -94,37 +94,69 @@ window.AudioRadar = (function () {
         playTone(3120, 110, 'sine', 0.22, 0);
         playTone(3520, 180, 'sine', 0.24, 0.12);
         if (typeof onBandActive === 'function') {
-          onBandActive('READY', 'POTHOLE SCANNER ONLINE — OPENING 3D SPLIT MAP');
+          onBandActive('READY', 'POTHOLE SCANNER ONLINE — OPENING 3D COCKPIT');
         }
         speakAnnouncement(
           language === 'mi'
             ? 'Kua rite te pūnaha Rim Reaper. Kei te matawai i ngā kōhao rori o Aotearoa.'
-            : 'Rim Reaper New Zealand Online. Left-Hand Lane Pothole Scanner Active.'
+            : 'Rim Reaper New Zealand Online. Left-Hand Lane Radar Armed.',
+          true
         );
-      }, 13800)
+      }, 8800)
     );
 
     bootTimers.push(
       setTimeout(() => {
         if (typeof onBandActive === 'function') {
-          onBandActive('COMPLETE', '3D SPLIT MAP & NZ LEFT-LANE SCANNER ACTIVE');
+          onBandActive('COMPLETE', '3D COCKPIT & NZ LEFT-LANE SCANNER ACTIVE');
         }
-      }, 15000)
+      }, 10000)
     );
   }
 
-  function speakAnnouncement(text) {
+  let lastVoiceText = '';
+  let lastVoiceTime = 0;
+
+  function speakAnnouncement(text, priority = false) {
     if (muted || hapticOnly) return;
+    const now = Date.now();
+    // Debounce identical voice messages within 10s unless priority
+    if (!priority && text === lastVoiceText && now - lastVoiceTime < 10000) {
+      return;
+    }
+    lastVoiceText = text;
+    lastVoiceTime = now;
+
     if ('speechSynthesis' in window) {
       try {
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = language === 'mi' ? 'mi-NZ' : 'en-NZ';
-        utter.rate = 1.04;
-        utter.pitch = 0.96;
-        window.speechSynthesis.speak(utter);
+        if (priority) window.speechSynthesis.cancel();
+        
+        // Military/avionics dual radar alert chirp before robotic voice
+        playTone(1960, 40, 'sawtooth', 0.16, 0);
+        setTimeout(() => {
+          playTone(2420, 50, 'square', 0.18, 0);
+        }, 42);
+
+        setTimeout(() => {
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.lang = language === 'mi' ? 'mi-NZ' : 'en-US';
+          // Robotic cybernetic synthesis parameters: low monotone pitch & deliberate mechanical cadence
+          utter.pitch = 0.68;
+          utter.rate = 0.94;
+          utter.volume = 1.0;
+
+          const voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+          if (voices && voices.length > 0) {
+            const robot = voices.find((v) =>
+              /robot|zarvox|trinoids|cellos|fred|daniel|google us english|en-us/i.test(v.name)
+            ) || voices.find((v) => v.lang.startsWith('en'));
+            if (robot) utter.voice = robot;
+          }
+
+          window.speechSynthesis.speak(utter);
+        }, 80);
       } catch (e) {
-        // Fallback chime if speechSynthesis fails
+        // Fallback tone
       }
     }
   }
